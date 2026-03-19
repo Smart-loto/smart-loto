@@ -1,16 +1,16 @@
-## Hi there 👋
+# 🎱 Smart-Loto — Analyse Statistique Intelligente
 
-<!--
-**Smart-loto/smart-loto** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
+Outil d'aide à la décision pour les joueurs de Loto et Euromillions.
 
-Here are some ideas to get you started:
+## 🚀 Fonctionnalités
 
-- 🔭 I’m currently working on ...
-- 🌱 I’m currently learning ...
-- 👯 I’m looking to collaborate on ...
-- 🤔 I’m looking for help with ...
-- 💬 Ask me about ...
-- 📫 How to reach me: ...
-- 😄 Pronouns: ...
-- ⚡ Fun fact: ...
--->
+- 🏠 Dashboard temps réel
+- 🎯 Générateur multi-modes (5 stratégies)
+- 📊 Statistiques complètes (heatmap, écarts, fréquences)
+- 🧪 Backtesting de stratégies
+- 🧮 Système réducteur
+
+## ⚠️ Avertissement
+
+Cet outil ne garantit aucun gain. Les loteries sont des jeux de hasard.
+Joueurs Info Service : 09 74 75 13 13
