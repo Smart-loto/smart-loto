@@ -696,15 +696,16 @@ def main():
         st.plotly_chart(fh, use_container_width=True)
 
         st.subheader("📋 Tableau complet")
-        tri = st.selectbox("Trier par", ["🌡️ Chaleur","Écart","P%","F20","⏳ Retard","% Record"])
-        cm = {"🌡️ Chaleur":"chaleur","Écart":"ecart","P%":"proba","F20":"f20","⏳ Retard":"retard","% Record":"ratio_rec"}
+               tri = st.selectbox("Trier par", ["Chaleur","Écart","Proba","F20","Retard","% Record"])
+        cm = {"Chaleur":"🌡️","Écart":"Éc.","Proba":"P%","F20":"F20","Retard":"⏳","% Record":"%Rec"}
         dfc = pd.DataFrame([{"N°":n,"🌡️":stats["boules"][n]["chaleur"],"Éc.":stats["boules"][n]["ecart"],
             "Moy":stats["boules"][n]["ecart_moy"],"Max":stats["boules"][n]["ecart_max"],
             "P%":stats["boules"][n]["proba"],"📈":stats["boules"][n]["tend"],
             "F20":stats["boules"][n]["f20"],"F12m":stats["boules"][n]["f12m"],
             "⏳":stats["boules"][n]["retard"],"%Rec":stats["boules"][n]["ratio_rec"]
             } for n in range(1, jeu["boules_max"]+1)])
-        st.dataframe(dfc.sort_values(cm.get(tri,"chaleur"), ascending=(tri in ["Écart","⏳ Retard"])),
+        col_tri = cm.get(tri, "🌡️")
+        st.dataframe(dfc.sort_values(col_tri, ascending=(tri in ["Écart","Retard"])),
             hide_index=True, use_container_width=True, height=500)
 
     # ══════════════════════════════
