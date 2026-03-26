@@ -755,8 +755,9 @@ def main():
                 st.markdown("**👎 Pires partenaires**")
                 st.dataframe(pd.DataFrame(partenaires[-10:]),hide_index=True,use_container_width=True)
 
+                       seuil_p=partenaires[min(4,len(partenaires)-1)]["Ensemble"] if partenaires else 0
             fig_p=go.Figure(go.Bar(x=[str(p["N°"])for p in partenaires[:20]],y=[p["Ensemble"]for p in partenaires[:20]],
-                marker_color=["#22c55e"if p["Ensemble"]>=partenaires[4]["Ensemble"]else"#3b82f6"for p in partenaires[:20]]))
+                marker_color=["#22c55e"if p["Ensemble"]>=seuil_p else"#3b82f6"for p in partenaires[:20]]))
             fig_p.update_layout(height=300,title=f"Top 20 partenaires du N°{num_choisi}")
             st.plotly_chart(fig_p,use_container_width=True)
 
