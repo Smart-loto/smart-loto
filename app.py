@@ -16,17 +16,144 @@ st.set_page_config(page_title="Smart-Loto V5", page_icon="🎱", layout="wide", 
 
 st.markdown("""
 <style>
-    .main-header {font-size:2.5rem;font-weight:800;background:linear-gradient(135deg,#1e40af,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center;padding:10px 0;}
-    .sub-header {text-align:center;color:#64748b;font-size:1.1rem;margin-bottom:30px;}
-    .boule {background:linear-gradient(135deg,#1e40af,#3b82f6);color:white;border-radius:50%;width:65px;height:65px;display:inline-flex;align-items:center;justify-content:center;font-size:22px;font-weight:bold;margin:5px;box-shadow:0 4px 12px rgba(30,64,175,0.4);}
-    .etoile {background:linear-gradient(135deg,#f59e0b,#fbbf24);color:white;border-radius:50%;width:65px;height:65px;display:inline-flex;align-items:center;justify-content:center;font-size:22px;font-weight:bold;margin:5px;box-shadow:0 4px 12px rgba(245,158,11,0.4);}
-    .grille-container {display:flex;align-items:center;justify-content:center;padding:25px;background:linear-gradient(135deg,#f8fafc,#e2e8f0);border-radius:20px;margin:15px 0;border:2px solid #e2e8f0;}
-    .footer-disclaimer {background:#fef3c7;border:1px solid #f59e0b;border-radius:12px;padding:15px;margin-top:30px;text-align:center;font-size:0.9rem;}
-    .alert-card {background:linear-gradient(135deg,#fef2f2,#fee2e2);border:2px solid #ef4444;border-radius:16px;padding:20px;margin:10px 0;}
-    .success-card {background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:2px solid #22c55e;border-radius:16px;padding:20px;margin:10px 0;}
-    .insight-card {background:linear-gradient(135deg,#eff6ff,#dbeafe);border:2px solid #3b82f6;border-radius:16px;padding:20px;margin:10px 0;}
-    .reco-card {background:linear-gradient(135deg,#fdf4ff,#f3e8ff);border:2px solid #a855f7;border-radius:16px;padding:20px;margin:10px 0;}
+    /* Force le texte sombre sur tous les éléments custom */
+    .main-header {
+        font-size: 2.5rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #1e40af, #7c3aed);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-align: center;
+        padding: 10px 0;
+    }
+    .sub-header {
+        text-align: center;
+        color: #64748b !important;
+        font-size: 1.1rem;
+        margin-bottom: 30px;
+    }
+    .boule {
+        background: linear-gradient(135deg, #1e40af, #3b82f6);
+        color: white !important;
+        border-radius: 50%;
+        width: 65px;
+        height: 65px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        font-weight: bold;
+        margin: 5px;
+        box-shadow: 0 4px 12px rgba(30, 64, 175, 0.4);
+    }
+    .etoile {
+        background: linear-gradient(135deg, #f59e0b, #fbbf24);
+        color: white !important;
+        border-radius: 50%;
+        width: 65px;
+        height: 65px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        font-weight: bold;
+        margin: 5px;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+    }
+    .grille-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 25px;
+        background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+        border-radius: 20px;
+        margin: 15px 0;
+        border: 2px solid #e2e8f0;
+        color: #1e293b !important;
+    }
+    .footer-disclaimer {
+        background: #fef3c7;
+        border: 1px solid #f59e0b;
+        border-radius: 12px;
+        padding: 15px;
+        margin-top: 30px;
+        text-align: center;
+        font-size: 0.9rem;
+        color: #92400e !important;
+    }
+    .footer-disclaimer a {
+        color: #b45309 !important;
+        text-decoration: underline;
+    }
+    .alert-card {
+        background: linear-gradient(135deg, #fef2f2, #fee2e2);
+        border: 2px solid #ef4444;
+        border-radius: 16px;
+        padding: 20px;
+        margin: 10px 0;
+        color: #991b1b !important;
+    }
+    .alert-card b, .alert-card strong {
+        color: #7f1d1d !important;
+    }
+    .success-card {
+        background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+        border: 2px solid #22c55e;
+        border-radius: 16px;
+        padding: 20px;
+        margin: 10px 0;
+        color: #166534 !important;
+    }
+    .success-card b, .success-card strong {
+        color: #14532d !important;
+    }
+    .insight-card {
+        background: linear-gradient(135deg, #eff6ff, #dbeafe);
+        border: 2px solid #3b82f6;
+        border-radius: 16px;
+        padding: 20px;
+        margin: 10px 0;
+        color: #1e3a5f !important;
+    }
+    .insight-card b, .insight-card strong {
+        color: #1e3a5f !important;
+    }
+    .reco-card {
+        background: linear-gradient(135deg, #fdf4ff, #f3e8ff);
+        border: 2px solid #a855f7;
+        border-radius: 16px;
+        padding: 20px;
+        margin: 10px 0;
+        color: #581c87 !important;
+    }
+    .reco-card b, .reco-card strong {
+        color: #3b0764 !important;
+    }
+    .reco-card span {
+        color: inherit !important;
+    }
+    /* Force la couleur sur tous les éléments HTML custom */
+    .stMarkdown div[data-testid="stMarkdownContainer"] span,
+    .stMarkdown div[data-testid="stMarkdownContainer"] p,
+    .stMarkdown div[data-testid="stMarkdownContainer"] div {
+        color: inherit;
+    }
+    /* Buraliste */
+    div[style*="font-size:28px"] {
+        color: #1e293b !important;
+    }
+    /* Score */
+    div[style*="font-size:3rem"] {
+        color: inherit !important;
+    }
+    div[style*="color:#64748b"] {
+        color: #64748b !important;
+    }
+    div[style*="color:#94a3b8"] {
+        color: #94a3b8 !important;
+    }
 </style>
+""", unsafe_allow_html=True)
 """, unsafe_allow_html=True)
 
 JEUX = {
@@ -357,7 +484,7 @@ def show_score(sc):
     ev="⭐"*max(1,min(5,(sc["total"]-20)//15+1))
     sc_c="#22c55e"if sc["total"]>=70 else("#f59e0b"if sc["total"]>=50 else"#ef4444")
     c1,c2=st.columns([1,2])
-    with c1:st.markdown(f"<div style='text-align:center;'><div style='font-size:3rem;font-weight:800;color:{sc_c};'>{sc['total']}</div><div style='color:#64748b;'>/ {sc['max']} {ev}</div></div>",unsafe_allow_html=True)
+    with c1:st.markdown(f"<div style='text-align:center;'><div style='font-size:3rem;font-weight:800;color:{sc_c};'>{sc['total']}</div><div style='color:#64748b !important;'>/ {sc['max']} {ev}</div></div>",unsafe_allow_html=True)
     with c2:
         mx={"⚖️ Parité":15,"📊 Dizaines":12,"➕ Somme":15,"🔀 Diversité":10,"🚫 Suite":8,"⭐ Étoiles":8,"🔢 Terms":8,"⬆️⬇️ B/H":8,"🌡️ Chaleur":8,"📊 Proba":8}
         for cr,pt in sc["detail"].items():
@@ -501,7 +628,7 @@ def main():
             for i,r in enumerate(ag):
                 gs=" — ".join(str(n)for n in r["grille"])
                 es=f" | ⭐{' — '.join(str(e)for e in r['etoiles'])}"if r["etoiles"]else""
-                st.markdown(f"<div style='text-align:center;font-size:28px;font-weight:bold;padding:15px;background:#f8fafc;border-radius:12px;margin:8px 0;'>G{i+1}: {gs}{es}</div>",unsafe_allow_html=True)
+                st.markdown(f"<div style='text-align:center;font-size:28px;font-weight:bold;padding:15px;background:#f8fafc;border-radius:12px;margin:8px 0;color:#1e293b;'>G{i+1}: {gs}{es}</div>",unsafe_allow_html=True)
             exp="".join(f"G{i+1}: {' - '.join(str(n)for n in r['grille'])}{' | E:'+' - '.join(str(e)for e in r['etoiles'])if r['etoiles']else''} (S:{r['score']['total']})\n"for i,r in enumerate(ag))
             st.download_button("📥",exp,f"grilles-{datetime.now().strftime('%Y%m%d')}.txt")
 
