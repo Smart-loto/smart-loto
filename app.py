@@ -1,5 +1,5 @@
 # ============================================================
-# SMART-LOTO — V5.0 — ULTIMATE + FIX UI
+# SMART-LOTO — V5.1 — COMPLETE + ALL FIXES
 # ============================================================
 
 import streamlit as st
@@ -10,168 +10,101 @@ from collections import Counter
 from datetime import datetime, timedelta
 import plotly.graph_objects as go
 import plotly.express as px
-import io, re, math
+import io, re
 
 st.set_page_config(page_title="Smart-Loto V5", page_icon="🎱", layout="wide", initial_sidebar_state="expanded")
 
-# ============================================================
-# CSS — TOUS LES TEXTES LISIBLES
-# ============================================================
 st.markdown("""
 <style>
     .main-header {
-        font-size: 2.5rem;
-        font-weight: 800;
-        background: linear-gradient(135deg, #1e40af, #7c3aed);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-align: center;
-        padding: 10px 0;
+        font-size:2.5rem;font-weight:800;
+        background:linear-gradient(135deg,#1e40af,#7c3aed);
+        -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+        text-align:center;padding:10px 0;
     }
-    .sub-header {
-        text-align: center;
-        color: #475569 !important;
-        font-size: 1.1rem;
-        margin-bottom: 30px;
-    }
+    .sub-header {text-align:center;color:#475569 !important;font-size:1.1rem;margin-bottom:30px;}
     .boule {
-        background: linear-gradient(135deg, #1e40af, #3b82f6);
-        color: #ffffff !important;
-        border-radius: 50%;
-        width: 65px; height: 65px;
-        display: inline-flex; align-items: center; justify-content: center;
-        font-size: 22px; font-weight: bold; margin: 5px;
-        box-shadow: 0 4px 12px rgba(30, 64, 175, 0.4);
+        background:linear-gradient(135deg,#1e40af,#3b82f6);color:#fff !important;
+        border-radius:50%;width:65px;height:65px;display:inline-flex;align-items:center;
+        justify-content:center;font-size:22px;font-weight:bold;margin:5px;
+        box-shadow:0 4px 12px rgba(30,64,175,0.4);
     }
     .etoile {
-        background: linear-gradient(135deg, #f59e0b, #fbbf24);
-        color: #ffffff !important;
-        border-radius: 50%;
-        width: 65px; height: 65px;
-        display: inline-flex; align-items: center; justify-content: center;
-        font-size: 22px; font-weight: bold; margin: 5px;
-        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+        background:linear-gradient(135deg,#f59e0b,#fbbf24);color:#fff !important;
+        border-radius:50%;width:65px;height:65px;display:inline-flex;align-items:center;
+        justify-content:center;font-size:22px;font-weight:bold;margin:5px;
+        box-shadow:0 4px 12px rgba(245,158,11,0.4);
     }
     .grille-container {
-        display: flex; align-items: center; justify-content: center;
-        padding: 25px;
-        background: linear-gradient(135deg, #f8fafc, #e2e8f0);
-        border-radius: 20px; margin: 15px 0;
-        border: 2px solid #e2e8f0;
-        color: #1e293b !important;
+        display:flex;align-items:center;justify-content:center;padding:25px;
+        background:linear-gradient(135deg,#f8fafc,#e2e8f0);border-radius:20px;
+        margin:15px 0;border:2px solid #e2e8f0;color:#1e293b !important;
     }
-    .grille-container b, .grille-container strong {
-        color: #1e293b !important;
-    }
+    .grille-container b,.grille-container strong{color:#1e293b !important;}
     .footer-disclaimer {
-        background: #fef3c7;
-        border: 1px solid #f59e0b;
-        border-radius: 12px;
-        padding: 15px; margin-top: 30px;
-        text-align: center; font-size: 0.9rem;
-        color: #92400e !important;
+        background:#fef3c7;border:1px solid #f59e0b;border-radius:12px;padding:15px;
+        margin-top:30px;text-align:center;font-size:0.9rem;color:#92400e !important;
     }
-    .footer-disclaimer a {
-        color: #b45309 !important;
-        text-decoration: underline;
-    }
+    .footer-disclaimer a{color:#b45309 !important;text-decoration:underline;}
     .alert-card {
-        background: linear-gradient(135deg, #fef2f2, #fee2e2);
-        border: 2px solid #ef4444;
-        border-radius: 16px; padding: 20px; margin: 10px 0;
-        color: #991b1b !important;
+        background:linear-gradient(135deg,#fef2f2,#fee2e2);border:2px solid #ef4444;
+        border-radius:16px;padding:20px;margin:10px 0;color:#991b1b !important;
     }
-    .alert-card b, .alert-card strong { color: #7f1d1d !important; }
-    .alert-card span { color: #991b1b !important; }
+    .alert-card b,.alert-card strong{color:#7f1d1d !important;}
+    .alert-card span{color:#991b1b !important;}
     .success-card {
-        background: linear-gradient(135deg, #f0fdf4, #dcfce7);
-        border: 2px solid #22c55e;
-        border-radius: 16px; padding: 20px; margin: 10px 0;
-        color: #166534 !important;
+        background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:2px solid #22c55e;
+        border-radius:16px;padding:20px;margin:10px 0;color:#166534 !important;
     }
-    .success-card b, .success-card strong { color: #14532d !important; }
-    .success-card span { color: #166534 !important; }
+    .success-card b,.success-card strong{color:#14532d !important;}
+    .success-card span{color:#166534 !important;}
     .insight-card {
-        background: linear-gradient(135deg, #eff6ff, #dbeafe);
-        border: 2px solid #3b82f6;
-        border-radius: 16px; padding: 20px; margin: 10px 0;
-        color: #1e3a5f !important;
+        background:linear-gradient(135deg,#eff6ff,#dbeafe);border:2px solid #3b82f6;
+        border-radius:16px;padding:20px;margin:10px 0;color:#1e3a5f !important;
     }
-    .insight-card b, .insight-card strong { color: #1e3a5f !important; }
-    .insight-card span { color: #1e3a5f !important; }
+    .insight-card b,.insight-card strong,.insight-card span{color:#1e3a5f !important;}
     .reco-card {
-        background: linear-gradient(135deg, #fdf4ff, #f3e8ff);
-        border: 2px solid #a855f7;
-        border-radius: 16px; padding: 20px; margin: 10px 0;
-        color: #581c87 !important;
+        background:linear-gradient(135deg,#fdf4ff,#f3e8ff);border:2px solid #a855f7;
+        border-radius:16px;padding:20px;margin:10px 0;color:#581c87 !important;
     }
-    .reco-card b, .reco-card strong { color: #3b0764 !important; }
-    .reco-card span { color: #581c87 !important; }
+    .reco-card b,.reco-card strong,.reco-card span{color:#581c87 !important;}
     .buraliste-card {
-        text-align: center;
-        font-size: 28px;
-        font-weight: bold;
-        padding: 15px;
-        background: #f8fafc;
-        border-radius: 12px;
-        margin: 8px 0;
-        color: #1e293b !important;
-        border: 1px solid #e2e8f0;
+        text-align:center;font-size:28px;font-weight:bold;padding:15px;
+        background:#f8fafc;border-radius:12px;margin:8px 0;
+        color:#1e293b !important;border:1px solid #e2e8f0;
     }
-    .score-big {
-        text-align: center;
-    }
-    .score-big .score-number {
-        font-size: 3rem;
-        font-weight: 800;
-    }
-    .score-big .score-label {
-        color: #64748b !important;
-        font-size: 0.9rem;
-    }
-    .score-big .score-detail {
-        color: #94a3b8 !important;
-        font-size: 0.8rem;
-    }
-    /* Force la lisibilité de tout le HTML custom */
-    .element-container div[data-testid="stMarkdownContainer"] > div {
-        color: #1e293b;
-    }
+    .score-big{text-align:center;}
+    .score-big .score-number{font-size:3rem;font-weight:800;}
+    .score-big .score-label{color:#64748b !important;font-size:0.9rem;}
+    .element-container div[data-testid="stMarkdownContainer"] > div{color:#1e293b;}
 </style>
 """, unsafe_allow_html=True)
 
 JEUX = {
-    "euromillions": {"nom":"Euromillions","emoji":"⭐","boules_max":50,"nb_boules":5,"etoiles_max":12,"nb_etoiles":2,"prix":2.50,"somme_min":90,"somme_max":160},
-    "loto": {"nom":"Loto","emoji":"🎱","boules_max":49,"nb_boules":5,"etoiles_max":None,"nb_etoiles":0,"prix":2.20,"somme_min":60,"somme_max":180}
+    "euromillions":{"nom":"Euromillions","emoji":"⭐","boules_max":50,"nb_boules":5,"etoiles_max":12,"nb_etoiles":2,"prix":2.50,"somme_min":90,"somme_max":160},
+    "loto":{"nom":"Loto","emoji":"🎱","boules_max":49,"nb_boules":5,"etoiles_max":None,"nb_etoiles":0,"prix":2.20,"somme_min":60,"somme_max":180}
 }
 
 # ============================================================
 # CSV LOADER
 # ============================================================
-def detecter_et_charger_csv(uploaded_file, jeu_id):
-    jeu=JEUX[jeu_id]; debug={}
-    content=uploaded_file.read(); uploaded_file.seek(0)
-    text=None
+def load_csv(up, jid):
+    jeu=JEUX[jid]; dbg={}
+    content=up.read(); up.seek(0); text=None
     for enc in ["utf-8-sig","utf-8","latin-1","cp1252"]:
-        try: text=content.decode(enc); debug["encodage"]=enc; break
+        try: text=content.decode(enc); dbg["enc"]=enc; break
         except: continue
-    if not text: return None, {"erreur":"Décodage impossible"}
+    if not text: return None,{"err":"Decode fail"}
     text=text.lstrip("\ufeff")
-    df=None; sep_f=None
+    df=None; sf=None
     for s in [";",",","\t"]:
         try:
-            dft=pd.read_csv(io.StringIO(text), sep=s, engine="python")
-            dft=dft.loc[:, ~dft.columns.str.match(r'^Unnamed')]
-            dft.columns=[c.strip() for c in dft.columns]
-            if len(dft.columns)>=7 and (df is None or len(dft.columns)>len(df.columns)):
-                df=dft; sep_f=s
+            d=pd.read_csv(io.StringIO(text),sep=s,engine="python")
+            d=d.loc[:,~d.columns.str.match(r'^Unnamed')]; d.columns=[c.strip() for c in d.columns]
+            if len(d.columns)>=7 and(df is None or len(d.columns)>len(df.columns)): df=d; sf=s
         except: pass
-    if df is None or len(df.columns)<7:
-        return None, {**debug, "erreur":"Colonnes insuffisantes"}
-    debug["colonnes"]=list(df.columns)
-    cl={c.upper():c for c in df.columns}
-
-    # Date
+    if df is None or len(df.columns)<7: return None,{**dbg,"err":"Not enough cols","cols":list(df.columns) if df is not None else []}
+    dbg["cols"]=list(df.columns); cl={c.upper():c for c in df.columns}
     dc=None
     for c in ["DATE","date","DATE_DE_TIRAGE"]:
         if c in df.columns: dc=c; break
@@ -179,9 +112,7 @@ def detecter_et_charger_csv(uploaded_file, jeu_id):
     if not dc:
         for c in df.columns:
             if "date" in c.lower(): dc=c; break
-    if not dc: return None, {**debug, "erreur":"Date introuvable"}
-
-    # Boules
+    if not dc: return None,{**dbg,"err":"No date col"}
     bc=[]
     for i in range(1,6):
         for c in [f"N{i}",f"n{i}",f"BOULE_{i}",f"boule_{i}"]:
@@ -193,46 +124,40 @@ def detecter_et_charger_csv(uploaded_file, jeu_id):
             if c==dc: continue
             try:
                 v=pd.to_numeric(df[c],errors="coerce").dropna()
-                if len(v)>len(df)*.3 and v.min()>=1 and v.max()<=jeu["boules_max"]:
-                    bc.append(c)
+                if len(v)>len(df)*.3 and v.min()>=1 and v.max()<=jeu["boules_max"]: bc.append(c)
                 if len(bc)>=5: break
             except: continue
-    if len(bc)<5: return None, {**debug, "erreur":f"{len(bc)} boules"}
-
-    # Étoiles
+    if len(bc)<5: return None,{**dbg,"err":f"Only {len(bc)} ball cols"}
     ec=[]
     if jeu["nb_etoiles"]>0:
         for i in range(1,3):
             for c in [f"E{i}",f"e{i}",f"ETOILE_{i}",f"etoile_{i}"]:
                 if c in df.columns: ec.append(c); break
                 elif c.upper() in cl: ec.append(cl[c.upper()]); break
-
-    # Build
-    res=pd.DataFrame()
+    r=pd.DataFrame()
     for fmt in [None,"%d/%m/%Y","%Y-%m-%d"]:
         try:
-            if fmt: res["date"]=pd.to_datetime(df[dc],format=fmt,errors="coerce").dt.date
-            else: res["date"]=pd.to_datetime(df[dc],dayfirst=True,errors="coerce").dt.date
-            if res["date"].notna().sum()>len(df)*.5: break
+            if fmt: r["date"]=pd.to_datetime(df[dc],format=fmt,errors="coerce").dt.date
+            else: r["date"]=pd.to_datetime(df[dc],dayfirst=True,errors="coerce").dt.date
+            if r["date"].notna().sum()>len(df)*.5: break
         except: continue
-    for i,c in enumerate(bc[:5],1): res[f"boule_{i}"]=pd.to_numeric(df[c],errors="coerce")
-    for i,c in enumerate(ec[:2],1): res[f"etoile_{i}"]=pd.to_numeric(df[c],errors="coerce")
+    for i,c in enumerate(bc[:5],1): r[f"boule_{i}"]=pd.to_numeric(df[c],errors="coerce")
+    for i,c in enumerate(ec[:2],1): r[f"etoile_{i}"]=pd.to_numeric(df[c],errors="coerce")
     try:
-        res["jour"]=pd.to_datetime(res["date"]).dt.day_name()
+        r["jour"]=pd.to_datetime(r["date"]).dt.day_name()
         jm={"Monday":"lundi","Tuesday":"mardi","Wednesday":"mercredi","Friday":"vendredi","Saturday":"samedi"}
-        res["jour"]=res["jour"].map(lambda x:jm.get(x,x))
-    except: res["jour"]="?"
-    try: res["mois"]=pd.to_datetime(res["date"]).dt.month
-    except: res["mois"]=0
-    res=res.dropna(subset=["date","boule_1","boule_2","boule_3","boule_4","boule_5"])
-    for i in range(1,6): res[f"boule_{i}"]=res[f"boule_{i}"].astype(int)
+        r["jour"]=r["jour"].map(lambda x:jm.get(x,x))
+    except: r["jour"]="?"
+    try: r["mois"]=pd.to_datetime(r["date"]).dt.month
+    except: r["mois"]=0
+    r=r.dropna(subset=["date","boule_1","boule_2","boule_3","boule_4","boule_5"])
+    for i in range(1,6): r[f"boule_{i}"]=r[f"boule_{i}"].astype(int)
     for i in range(1,3):
-        if f"etoile_{i}" in res.columns: res[f"etoile_{i}"]=res[f"etoile_{i}"].fillna(0).astype(int)
-    for i in range(1,6): res=res[(res[f"boule_{i}"]>=1)&(res[f"boule_{i}"]<=jeu["boules_max"])]
-    res=res.sort_values("date",ascending=False).drop_duplicates("date").reset_index(drop=True)
-    debug["succes"]=len(res)>0; debug["nb_tirages"]=len(res)
-    debug["mapping"]={"date":dc,"boules":bc[:5],"etoiles":ec[:2]}
-    return res, debug
+        if f"etoile_{i}" in r.columns: r[f"etoile_{i}"]=r[f"etoile_{i}"].fillna(0).astype(int)
+    for i in range(1,6): r=r[(r[f"boule_{i}"]>=1)&(r[f"boule_{i}"]<=jeu["boules_max"])]
+    r=r.sort_values("date",ascending=False).drop_duplicates("date").reset_index(drop=True)
+    dbg["ok"]=len(r)>0; dbg["n"]=len(r); dbg["map"]={"d":dc,"b":bc[:5],"e":ec[:2]}
+    return r, dbg
 
 def gen_simul(jid, nb=500):
     random.seed(42); np.random.seed(42); jeu=JEUX[jid]; t=[]; now=datetime.now()
@@ -246,80 +171,70 @@ def gen_simul(jid, nb=500):
     return pd.DataFrame(t).sort_values("date",ascending=False).reset_index(drop=True)
 
 # ============================================================
-# STATS ENGINE V5
+# STATS ENGINE
 # ============================================================
 @st.cache_data
-def calc_stats(df_json, jid, jour_f=None):
+def calc_stats(df_json, jid, jf=None):
     df=pd.read_json(io.StringIO(df_json)); df["date"]=pd.to_datetime(df["date"]).dt.date
-    if jour_f and jour_f!="tous" and "jour" in df.columns:
-        df=df[df["jour"].str.lower()==jour_f.lower()].reset_index(drop=True)
-    jeu=JEUX[jid]; stats={}; cols=[f"boule_{i}" for i in range(1,6)]
+    if jf and jf!="tous" and "jour" in df.columns:
+        df=df[df["jour"].str.lower()==jf.lower()].reset_index(drop=True)
+    jeu=JEUX[jid]; S={}; C=[f"boule_{i}" for i in range(1,6)]
     an=[]
-    for c in cols: an.extend(df[c].tolist())
-    df20=df.head(20); n20=[]
-    for c in cols: n20.extend(df20[c].tolist())
-    d12=datetime.now().date()-timedelta(days=365); df12=df[df["date"]>=d12]; n12=[]
-    for c in cols: n12.extend(df12[c].tolist())
-    d3=datetime.now().date()-timedelta(days=90); df3=df[df["date"]>=d3]; n3=[]
-    for c in cols: n3.extend(df3[c].tolist())
+    for c in C: an.extend(df[c].tolist())
+    d20=df.head(20); n20=[]
+    for c in C: n20.extend(d20[c].tolist())
+    dt12=datetime.now().date()-timedelta(days=365); df12=df[df["date"]>=dt12]; n12=[]
+    for c in C: n12.extend(df12[c].tolist())
+    dt3=datetime.now().date()-timedelta(days=90); df3=df[df["date"]>=dt3]; n3=[]
+    for c in C: n3.extend(df3[c].tolist())
     fa,f20,f12,f3=Counter(an),Counter(n20),Counter(n12),Counter(n3)
-
-    for n in range(1, jeu["boules_max"]+1):
+    for n in range(1,jeu["boules_max"]+1):
         ec=0
         for _,r in df.iterrows():
-            if n in [int(r[c]) for c in cols]: break
+            if n in [int(r[c]) for c in C]: break
             ec+=1
-        pos=[idx for idx,r in df.iterrows() if n in [int(r[c]) for c in cols]]
+        pos=[i for i,r in df.iterrows() if n in [int(r[c]) for c in C]]
         ech=[pos[i+1]-pos[i] for i in range(len(pos)-1)] if len(pos)>1 else []
-        em=np.mean(ech) if ech else 10
-        ex=max(ech) if ech else ec
+        em=np.mean(ech) if ech else 10; ex=max(ech) if ech else ec
         es=np.std(ech) if len(ech)>1 else 5
-        dern=None
+        dn=None
         for _,r in df.iterrows():
-            if n in [int(r[c]) for c in cols]: dern=r["date"]; break
-        fo=(f20.get(n,0)/max(len(df20),1))*100
-        ft=(len(df12)*5)/jeu["boules_max"]
-        fn=(f12.get(n,0)/max(ft,1))*50
-        ep=max(0,30-(ec*2))
-        ch=min(100,max(0,.40*fo+.35*fn+.25*ep))
+            if n in [int(r[c]) for c in C]: dn=r["date"]; break
+        fo=(f20.get(n,0)/max(len(d20),1))*100
+        ft=(len(df12)*5)/jeu["boules_max"]; fn=(f12.get(n,0)/max(ft,1))*50
+        ep=max(0,30-(ec*2)); ch=min(100,max(0,.4*fo+.35*fn+.25*ep))
         rr=(ec/ex*100) if ex>0 else 0
-        if em>0: z_ec=(ec-em)/max(es,1); pb=min(99,max(1,50+z_ec*15))
+        if em>0: zz=(ec-em)/max(es,1); pb=min(99,max(1,50+zz*15))
         else: pb=50
-        f_p1=f3.get(n,0); f_p2=f12.get(n,0)-f3.get(n,0)
-        t1=f_p1/max(len(df3),1)*100; t2=f_p2/max(len(df12)-len(df3),1)*100
-        tend="↗️" if t1>t2*1.3 else ("↘️" if t1<t2*0.7 else "→")
-        retard=max(0, round(em-ec))
-        stats[n]={"numero":n,"ecart":ec,"ecart_moy":round(em,1),"ecart_max":ex,"ecart_std":round(es,1),
+        fp1=f3.get(n,0); fp2=f12.get(n,0)-f3.get(n,0)
+        t1=fp1/max(len(df3),1)*100; t2=fp2/max(len(df12)-len(df3),1)*100
+        td="↗️" if t1>t2*1.3 else ("↘️" if t1<t2*0.7 else "→")
+        ret=max(0,round(em-ec))
+        S[n]={"numero":n,"ecart":ec,"ecart_moy":round(em,1),"ecart_max":ex,"ecart_std":round(es,1),
             "freq_tot":fa.get(n,0),"f20":f20.get(n,0),"f12m":f12.get(n,0),"f3m":f3.get(n,0),
-            "chaleur":round(ch,1),"dern":str(dern) if dern else "—","ratio_rec":round(rr,1),
-            "proba":round(pb,1),"tend":tend,"term":n%10,"diz":(n-1)//10,"retard":retard}
-
-    # Étoiles
+            "chaleur":round(ch,1),"dern":str(dn) if dn else "—","ratio_rec":round(rr,1),
+            "proba":round(pb,1),"tend":td,"term":n%10,"diz":(n-1)//10,"retard":ret}
     se={}
     if jeu["nb_etoiles"] and "etoile_1" in df.columns:
         ce=[f"etoile_{i}" for i in range(1,jeu["nb_etoiles"]+1)]
         ae=[]; e20=[]
         for c in ce:
-            if c in df.columns: ae.extend(df[c].tolist()); e20.extend(df20[c].tolist())
+            if c in df.columns: ae.extend(df[c].tolist()); e20.extend(d20[c].tolist())
         fe,fe20=Counter(ae),Counter(e20)
-        for n in range(1, jeu["etoiles_max"]+1):
+        for n in range(1,jeu["etoiles_max"]+1):
             ec=0
             for _,r in df.iterrows():
                 if n in [int(r[c]) for c in ce if c in df.columns]: break
                 ec+=1
             se[n]={"numero":n,"ecart":ec,"freq_tot":fe.get(n,0),"f20":fe20.get(n,0)}
-
-    # Paires
     paires=Counter()
     for _,r in df.iterrows():
-        bs=sorted([int(r[c]) for c in cols])
+        bs=sorted([int(r[c]) for c in C])
         for i in range(len(bs)):
             for j in range(i+1,len(bs)): paires[(bs[i],bs[j])]+=1
-
-    # Analyse structurelle
     analyses=[]
     for _,r in df.iterrows():
-        bs=[int(r[c]) for c in cols]
+        bs=[int(r[c]) for c in C]
         analyses.append({"pairs":sum(1 for b in bs if b%2==0),"bas":sum(1 for b in bs if b<=25),
             "somme":sum(bs),"terms_diff":len(set(b%10 for b in bs)),"diz_diff":len(set((b-1)//10 for b in bs))})
     sommes=[a["somme"] for a in analyses]
@@ -329,100 +244,89 @@ def calc_stats(df_json, jid, jour_f=None):
         "bas_moy":round(np.mean([a["bas"] for a in analyses]),1),
         "terms_moy":round(np.mean([a["terms_diff"] for a in analyses]),1),
         "diz_moy":round(np.mean([a["diz_diff"] for a in analyses]),1)}
-
-    # Saisonnier
     saison={}
     if "mois" in df.columns:
-        for mois in range(1,13):
-            dfm=df[df["mois"]==mois] if "mois" in df.columns else pd.DataFrame()
+        for m in range(1,13):
+            dfm=df[df["mois"]==m]
             if len(dfm)>0:
                 nm=[]
-                for c in cols: nm.extend(dfm[c].tolist())
-                saison[mois]={"nb":len(dfm),"top":Counter(nm).most_common(5)}
-
-    term_all=Counter(n%10 for n in an); term_20=Counter(n%10 for n in n20)
-    diz_all=Counter((n-1)//10 for n in an); diz_20=Counter((n-1)//10 for n in n20)
-
-    return {"boules":stats,"etoiles":se,"paires":paires.most_common(30),
-        "term_all":dict(term_all),"term_20":dict(term_20),
-        "diz_all":dict(diz_all),"diz_20":dict(diz_20),
-        "analyses":analyses,"profil":po,"saison":saison,
-        "nb_tirages":len(df),
+                for c in C: nm.extend(dfm[c].tolist())
+                saison[m]={"nb":len(dfm),"top":Counter(nm).most_common(5)}
+    return {"boules":S,"etoiles":se,"paires":paires.most_common(30),
+        "analyses":analyses,"profil":po,"saison":saison,"nb_tirages":len(df),
         "date_1":str(df.iloc[-1]["date"]) if len(df)>0 else "—",
         "date_n":str(df.iloc[0]["date"]) if len(df)>0 else "—"}
 
 # ============================================================
-# SCORE V5
+# SCORE
 # ============================================================
-def score_v5(gr, et, stats, jid):
-    jeu=JEUX[jid]; sc={}; po=stats.get("profil",{})
+def score_v5(gr, et, st_, jid):
+    jeu=JEUX[jid]; sc={}; po=st_.get("profil",{})
     np2=sum(1 for n in gr if n%2==0)
     sc["⚖️ Parité"]=15 if abs(np2-po.get("pairs_moy",2.5))<=0.5 else (10 if abs(np2-po.get("pairs_moy",2.5))<=1.5 else 5)
     dz=Counter((n-1)//10 for n in gr)
     sc["📊 Dizaines"]=12 if len(dz)>=round(po.get("diz_moy",4)) else (8 if len(dz)>=round(po.get("diz_moy",4))-1 else 4)
     s=sum(gr); q1=po.get("somme_q1",90); q3=po.get("somme_q3",160)
     sc["➕ Somme"]=15 if q1<=s<=q3 else (10 if jeu["somme_min"]<=s<=jeu["somme_max"] else 3)
-    ecs=[stats["boules"][n]["ecart"] for n in gr if n in stats["boules"]]
+    ecs=[st_["boules"][n]["ecart"] for n in gr if n in st_["boules"]]
     sc["🔀 Diversité"]=(10 if float(np.std(ecs))>5 else (7 if float(np.std(ecs))>3 else 4)) if len(set(ecs))>1 else 4
     g=sorted(gr); hs=any(g[i+1]==g[i]+1 and g[i+2]==g[i]+2 for i in range(len(g)-2))
     sc["🚫 Suite"]=2 if hs else 8
-    if et and len(et)==2: ec=abs(et[0]-et[1]); sc["⭐ Étoiles"]=8 if ec>=3 else (5 if ec>=2 else 2)
+    if et and len(et)==2: e=abs(et[0]-et[1]); sc["⭐ Étoiles"]=8 if e>=3 else (5 if e>=2 else 2)
     else: sc["⭐ Étoiles"]=8
     terms=set(n%10 for n in gr)
     sc["🔢 Terms"]=8 if len(terms)>=round(po.get("terms_moy",4)) else (5 if len(terms)>=round(po.get("terms_moy",4))-1 else 2)
     nb_bas=sum(1 for n in gr if n<=jeu["boules_max"]//2)
     sc["⬆️⬇️ B/H"]=8 if abs(nb_bas-po.get("bas_moy",2.5))<=0.5 else (5 if abs(nb_bas-po.get("bas_moy",2.5))<=1.5 else 2)
-    chs=[stats["boules"][n]["chaleur"] for n in gr if n in stats["boules"]]
+    chs=[st_["boules"][n]["chaleur"] for n in gr if n in st_["boules"]]
     mc=np.mean(chs) if chs else 50
     sc["🌡️ Chaleur"]=8 if 35<=mc<=65 else (5 if 20<=mc<=80 else 2)
-    pbs=[stats["boules"][n]["proba"] for n in gr if n in stats["boules"]]
+    pbs=[st_["boules"][n]["proba"] for n in gr if n in st_["boules"]]
     mp=np.mean(pbs) if pbs else 50
     sc["📊 Proba"]=8 if mp>=55 else (5 if mp>=45 else 2)
-    return {"total":sum(sc.values()), "detail":sc, "max":100}
+    return {"total":sum(sc.values()),"detail":sc,"max":100}
 
 # ============================================================
-# GENERATOR V5
+# GENERATOR
 # ============================================================
-def gen_grille(jid, stats, mode="aleatoire", fp=False, fs=False, fd=False, fa=False,
+def gen_grille(jid, st_, mode="aleatoire", fp=False, fs=False, fd=False, fa=False,
                chasseur=0, forces=None, ee=0, plafond="aucun",
-               f_term=False, f_bh=False,
-               pw_ch=50, pw_ec=50, pw_pr=50, mt=2000):
+               f_term=False, f_bh=False, pw_ch=50, pw_ec=50, pw_pr=50, mt=2000):
     jeu=JEUX[jid]
     for t in range(mt):
         if mode=="optimal":
-            ns=list(stats["boules"].keys())
-            sc_c=[(pw_ch/100)*stats["boules"][n]["chaleur"]+(pw_ec/100)*min(100,stats["boules"][n]["ecart"]*8)+(pw_pr/100)*stats["boules"][n]["proba"] for n in ns]
-            sc_c=[s**1.5+1 for s in sc_c]; tp=sum(sc_c)
-            pool=list(np.random.choice(ns,size=min(25,len(ns)),replace=False,p=[s/tp for s in sc_c]))
-        elif mode=="contrarian": pool=sorted(stats["boules"],key=lambda x:stats["boules"][x]["freq_tot"])[:20]
-        elif mode=="probabiliste": pool=sorted(stats["boules"],key=lambda x:stats["boules"][x]["proba"],reverse=True)[:20]
+            ns=list(st_["boules"].keys())
+            sc=[(pw_ch/100)*st_["boules"][n]["chaleur"]+(pw_ec/100)*min(100,st_["boules"][n]["ecart"]*8)+(pw_pr/100)*st_["boules"][n]["proba"] for n in ns]
+            sc=[s**1.5+1 for s in sc]; tp=sum(sc)
+            pool=list(np.random.choice(ns,size=min(25,len(ns)),replace=False,p=[s/tp for s in sc]))
+        elif mode=="contrarian": pool=sorted(st_["boules"],key=lambda x:st_["boules"][x]["freq_tot"])[:20]
+        elif mode=="probabiliste": pool=sorted(st_["boules"],key=lambda x:st_["boules"][x]["proba"],reverse=True)[:20]
         elif mode=="tendance":
-            pool=[n for n in stats["boules"] if stats["boules"][n]["tend"]=="↗️"]
-            if len(pool)<10: pool+=sorted(stats["boules"],key=lambda x:stats["boules"][x]["chaleur"],reverse=True)[:20]
+            pool=[n for n in st_["boules"] if st_["boules"][n]["tend"]=="↗️"]
+            if len(pool)<10: pool+=sorted(st_["boules"],key=lambda x:st_["boules"][x]["chaleur"],reverse=True)[:20]
             pool=pool[:25]
-        elif mode=="retard": pool=sorted(stats["boules"],key=lambda x:stats["boules"][x]["retard"])[:20]
-        elif mode=="chaud": pool=sorted(stats["boules"],key=lambda x:stats["boules"][x]["chaleur"],reverse=True)[:20]
-        elif mode=="froid": pool=sorted(stats["boules"],key=lambda x:stats["boules"][x]["ecart"],reverse=True)[:20]
-        elif mode=="top": pool=sorted(stats["boules"],key=lambda x:stats["boules"][x]["f12m"],reverse=True)[:15]
+        elif mode=="retard": pool=sorted(st_["boules"],key=lambda x:st_["boules"][x]["retard"])[:20]
+        elif mode=="chaud": pool=sorted(st_["boules"],key=lambda x:st_["boules"][x]["chaleur"],reverse=True)[:20]
+        elif mode=="froid": pool=sorted(st_["boules"],key=lambda x:st_["boules"][x]["ecart"],reverse=True)[:20]
+        elif mode=="top": pool=sorted(st_["boules"],key=lambda x:st_["boules"][x]["f12m"],reverse=True)[:15]
         elif mode=="hybride":
-            ns=list(stats["boules"].keys()); pw=[stats["boules"][n]["chaleur"]**1.5+5 for n in ns]
+            ns=list(st_["boules"].keys()); pw=[st_["boules"][n]["chaleur"]**1.5+5 for n in ns]
             tp=sum(pw); pool=list(np.random.choice(ns,size=min(25,len(ns)),replace=False,p=[p/tp for p in pw]))
-        else: pool=list(range(1, jeu["boules_max"]+1))
-
+        else: pool=list(range(1,jeu["boules_max"]+1))
         if plafond=="moins_40": pool=[n for n in pool if n<40]
         if chasseur>0:
-            pf=[n for n in pool if stats["boules"][n]["ecart"]>=chasseur]
+            pf=[n for n in pool if st_["boules"][n]["ecart"]>=chasseur]
             if len(pf)>=5: pool=pf
         fo=[f for f in (forces or []) if 1<=f<=jeu["boules_max"]]
         di=[n for n in pool if n not in fo]; mq=5-len(fo)
         if mq>len(di): di=[n for n in range(1,jeu["boules_max"]+1) if n not in fo]
-        ch=random.sample(di, min(mq,len(di))) if mq>0 else []
+        ch=random.sample(di,min(mq,len(di))) if mq>0 else []
         gr=sorted(fo+ch)[:5]
         if plafond=="force_40" and not any(n>=40 for n in gr):
             s40=[n for n in range(40,jeu["boules_max"]+1) if n not in gr]
             nf=[n for n in gr if n not in fo]
             if s40 and nf:
-                rm=min(nf, key=lambda x:stats["boules"][x]["chaleur"])
+                rm=min(nf,key=lambda x:st_["boules"][x]["chaleur"])
                 gr.remove(rm); gr.append(random.choice(s40)); gr=sorted(gr)
         et=[]
         if jeu["nb_etoiles"] and jeu["etoiles_max"]:
@@ -436,24 +340,23 @@ def gen_grille(jid, stats, mode="aleatoire", fp=False, fs=False, fd=False, fa=Fa
         if fd: v=v and max(Counter((n-1)//10 for n in gr).values())<=3
         if fa: gs=sorted(gr); v=v and not any(gs[i+1]==gs[i]+1 and gs[i+2]==gs[i]+2 for i in range(len(gs)-2))
         if f_term: v=v and len(set(n%10 for n in gr))>=4
-        if f_bh: nb_b=sum(1 for n in gr if n<=jeu["boules_max"]//2); v=v and 1<=nb_b<=4
-        if v: return {"grille":gr,"etoiles":et,"score":score_v5(gr,et,stats,jid),"t":t+1,"mode":mode}
+        if f_bh: nb=sum(1 for n in gr if n<=jeu["boules_max"]//2); v=v and 1<=nb<=4
+        if v: return {"grille":gr,"etoiles":et,"score":score_v5(gr,et,st_,jid),"mode":mode}
     gr=sorted(random.sample(range(1,jeu["boules_max"]+1),5))
     et=sorted(random.sample(range(1,jeu["etoiles_max"]+1),2)) if jeu["etoiles_max"] else []
-    return {"grille":gr,"etoiles":et,"score":score_v5(gr,et,stats,jid),"t":mt,"mode":"fallback"}
+    return {"grille":gr,"etoiles":et,"score":score_v5(gr,et,st_,jid),"mode":"fallback"}
 
-def backtest(df,jid,stats,mode,nt=50,gpt=1):
-    jeu=JEUX[jid]; cols=[f"boule_{i}" for i in range(1,6)]
-    res={str(i):0 for i in range(6)}; tm=0; tg=0; gt={0:0,1:0,2:0,3:4,4:50,5:5000}; hist=[]
+def backtest(df,jid,st_,mode,nt=50):
+    jeu=JEUX[jid]; C=[f"boule_{i}" for i in range(1,6)]
+    res={str(i):0 for i in range(6)}; tm=0; tg=0; gt={0:0,1:0,2:0,3:4,4:50,5:5000}; hi=[]
     for idx in range(min(nt,len(df))):
-        row=df.iloc[idx]; bt=set(int(row[c]) for c in cols)
-        for _ in range(gpt):
-            r=gen_grille(jid,stats,mode=mode); nb=len(set(r["grille"])&bt)
-            res[str(nb)]+=1; tm+=jeu["prix"]; g=gt.get(nb,0); tg+=g
-            if nb>=3: hist.append({"date":str(row["date"]),"grille":r["grille"],"tirage":sorted(bt),"bons":nb,"gain":g})
-    return {"resultats":res,"mise":round(tm,2),"gains":round(tg,2),"bilan":round(tg-tm,2),"nb":nt*gpt,"hist":hist}
+        row=df.iloc[idx]; bt=set(int(row[c]) for c in C)
+        r=gen_grille(jid,st_,mode=mode); nb=len(set(r["grille"])&bt)
+        res[str(nb)]+=1; tm+=jeu["prix"]; g=gt.get(nb,0); tg+=g
+        if nb>=3: hi.append({"date":str(row["date"]),"grille":r["grille"],"tirage":sorted(bt),"bons":nb,"gain":g})
+    return {"res":res,"mise":round(tm,2),"gains":round(tg,2),"bilan":round(tg-tm,2),"nb":nt,"hi":hi}
 
-def reducteur(nums, t=5):
+def reducteur(nums,t=5):
     from itertools import combinations
     if len(nums)<=t: return [sorted(nums)]
     combs=list(combinations(nums,t)); random.shuffle(combs)
@@ -465,216 +368,172 @@ def reducteur(nums, t=5):
     return gr
 
 # ============================================================
-# AFFICHAGE — FONCTIONS RÉUTILISABLES
+# UI HELPERS
 # ============================================================
-def html_grille(gr, et, stats, jid):
-    h = "<div class='grille-container'>"
+def html_gr(gr, et, st_, jid):
+    h="<div class='grille-container'>"
     for b in gr:
-        ch = stats["boules"][b]["chaleur"]
-        bg = "linear-gradient(135deg,#dc2626,#ef4444)" if ch>=60 else ("linear-gradient(135deg,#1e40af,#3b82f6)" if ch>=40 else "linear-gradient(135deg,#1e3a5f,#475569)")
-        h += f"<span style='background:{bg};color:#ffffff;border-radius:50%;width:65px;height:65px;display:inline-flex;align-items:center;justify-content:center;font-size:22px;font-weight:bold;margin:5px;box-shadow:0 4px 12px rgba(0,0,0,0.3);'>{b}</span>"
+        ch=st_["boules"][b]["chaleur"]
+        bg="linear-gradient(135deg,#dc2626,#ef4444)" if ch>=60 else ("linear-gradient(135deg,#1e40af,#3b82f6)" if ch>=40 else "linear-gradient(135deg,#1e3a5f,#475569)")
+        h+=f"<span style='background:{bg};color:#fff;border-radius:50%;width:65px;height:65px;display:inline-flex;align-items:center;justify-content:center;font-size:22px;font-weight:bold;margin:5px;box-shadow:0 4px 12px rgba(0,0,0,0.3);'>{b}</span>"
     if et:
-        h += "<span style='margin:0 15px;font-size:28px;color:#94a3b8;'>|</span>"
-        for e in et: h += f"<span class='etoile'>⭐{e}</span>"
-    h += "</div>"
-    return h
+        h+="<span style='margin:0 15px;font-size:28px;color:#94a3b8;'>|</span>"
+        for e in et: h+=f"<span class='etoile'>⭐{e}</span>"
+    h+="</div>"; return h
 
-def show_score(sc):
-    ev = "⭐" * max(1, min(5, (sc["total"]-20)//15+1))
-    sc_c = "#22c55e" if sc["total"]>=70 else ("#f59e0b" if sc["total"]>=50 else "#ef4444")
-    c1, c2 = st.columns([1,2])
+def show_sc(sc):
+    ev="⭐"*max(1,min(5,(sc["total"]-20)//15+1))
+    cc="#22c55e" if sc["total"]>=70 else ("#f59e0b" if sc["total"]>=50 else "#ef4444")
+    c1,c2=st.columns([1,2])
     with c1:
-        st.markdown(
-            f"<div class='score-big'>"
-            f"<div class='score-number' style='color:{sc_c};'>{sc['total']}</div>"
-            f"<div class='score-label'>/ {sc['max']} {ev}</div>"
-            f"</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='score-big'><div class='score-number' style='color:{cc};'>{sc['total']}</div><div class='score-label'>/ {sc['max']} {ev}</div></div>",unsafe_allow_html=True)
     with c2:
-        mx = {"⚖️ Parité":15,"📊 Dizaines":12,"➕ Somme":15,"🔀 Diversité":10,"🚫 Suite":8,"⭐ Étoiles":8,"🔢 Terms":8,"⬆️⬇️ B/H":8,"🌡️ Chaleur":8,"📊 Proba":8}
-        for cr, pt in sc["detail"].items():
-            m = mx.get(cr, 8); pct = pt/m if m else 0
-            cl = "#22c55e" if pct>=.7 else ("#f59e0b" if pct>=.4 else "#ef4444")
-            bar = "█"*int(pct*10) + "░"*(10-int(pct*10))
-            st.markdown(f"<span style='font-size:0.85rem;color:#1e293b;'>`{cr}` <span style='color:{cl};font-family:monospace;'>{bar}</span> **{pt}/{m}**</span>", unsafe_allow_html=True)
+        mx={"⚖️ Parité":15,"📊 Dizaines":12,"➕ Somme":15,"🔀 Diversité":10,"🚫 Suite":8,"⭐ Étoiles":8,"🔢 Terms":8,"⬆️⬇️ B/H":8,"🌡️ Chaleur":8,"📊 Proba":8}
+        for cr,pt in sc["detail"].items():
+            m=mx.get(cr,8); pct=pt/m if m else 0
+            cl="#22c55e" if pct>=.7 else ("#f59e0b" if pct>=.4 else "#ef4444")
+            bar="█"*int(pct*10)+"░"*(10-int(pct*10))
+            st.markdown(f"<span style='font-size:.85rem;color:#1e293b;'>`{cr}` <span style='color:{cl};font-family:monospace;'>{bar}</span> **{pt}/{m}**</span>",unsafe_allow_html=True)
 
-def auto_suggestion(stats, jeu_id):
-    jeu = JEUX[jeu_id]; recos = []
-    nb_hausse = sum(1 for s in stats["boules"].values() if s["tend"]=="↗️")
-    if nb_hausse > jeu["boules_max"]*0.25:
-        recos.append({"mode":"tendance","raison":f"{nb_hausse} numéros en hausse","confiance":80})
-    nb_record = sum(1 for s in stats["boules"].values() if s["ratio_rec"]>=80)
-    if nb_record >= 5:
-        recos.append({"mode":"retard","raison":f"{nb_record} numéros à ≥80% du record","confiance":75})
-    moy_proba = np.mean([s["proba"] for s in stats["boules"].values()])
-    if moy_proba > 55:
-        recos.append({"mode":"probabiliste","raison":f"Proba moyenne élevée ({moy_proba:.1f}%)","confiance":70})
-    moy_ecart = np.mean([s["ecart"] for s in stats["boules"].values()])
-    moy_attendu = jeu["boules_max"]/5
-    if moy_ecart > moy_attendu*1.2:
-        recos.append({"mode":"froid","raison":f"Écart moyen élevé ({moy_ecart:.1f})","confiance":65})
-    else:
-        recos.append({"mode":"chaud","raison":"Écart moyen normal → chauds favorisés","confiance":60})
-    recos.append({"mode":"optimal","raison":"Compromis intelligent","confiance":70})
-    recos.sort(key=lambda x:x["confiance"], reverse=True)
-    return recos
+def auto_sug(st_, jid):
+    jeu=JEUX[jid]; rc=[]
+    nh=sum(1 for s in st_["boules"].values() if s["tend"]=="↗️")
+    if nh>jeu["boules_max"]*.25: rc.append({"m":"tendance","r":f"{nh} numéros en hausse","c":80})
+    nr=sum(1 for s in st_["boules"].values() if s["ratio_rec"]>=80)
+    if nr>=5: rc.append({"m":"retard","r":f"{nr} numéros à ≥80% du record","c":75})
+    mp=np.mean([s["proba"] for s in st_["boules"].values()])
+    if mp>55: rc.append({"m":"probabiliste","r":f"Proba moy élevée ({mp:.1f}%)","c":70})
+    me=np.mean([s["ecart"] for s in st_["boules"].values()])
+    ma=jeu["boules_max"]/5
+    if me>ma*1.2: rc.append({"m":"froid","r":f"Écart moy élevé ({me:.1f})","c":65})
+    else: rc.append({"m":"chaud","r":"Écart moy normal → chauds","c":60})
+    rc.append({"m":"optimal","r":"Compromis intelligent","c":70})
+    rc.sort(key=lambda x:x["c"],reverse=True); return rc
 
 # ============================================================
-# INTERFACE V5
+# MAIN
 # ============================================================
 def main():
-    st.sidebar.markdown(
-        "<div style='text-align:center;'>"
-        "<h1 style='font-size:2rem;color:#1e293b;'>🎱 Smart-Loto</h1>"
-        "<p style='color:#64748b;'>V5.0 Ultimate</p>"
-        "</div>", unsafe_allow_html=True)
+    st.sidebar.markdown("<div style='text-align:center;'><h1 style='font-size:2rem;color:#1e293b;'>🎱 Smart-Loto</h1><p style='color:#64748b;'>V5.1</p></div>",unsafe_allow_html=True)
     st.sidebar.markdown("---")
-    jeu_id = st.sidebar.selectbox("🎮", ["euromillions","loto"], format_func=lambda x:f"{JEUX[x]['emoji']} {JEUX[x]['nom']}")
-    jeu = JEUX[jeu_id]
+    jid=st.sidebar.selectbox("🎮",["euromillions","loto"],format_func=lambda x:f"{JEUX[x]['emoji']} {JEUX[x]['nom']}")
+    jeu=JEUX[jid]
     st.sidebar.markdown("---")
-    up = st.sidebar.file_uploader(f"📤 CSV", type=["csv","txt"])
-    reel = False; dbg = {}
+    up=st.sidebar.file_uploader("📤 CSV",type=["csv","txt"])
+    reel=False; dbg={}
     if up:
-        df, dbg = detecter_et_charger_csv(up, jeu_id)
-        if df is not None and len(df)>0:
-            reel=True; st.sidebar.success(f"✅ {len(df)} tirages")
-        else:
-            st.sidebar.error("❌ Erreur CSV"); df=gen_simul(jeu_id)
-    else:
-        df = gen_simul(jeu_id); st.sidebar.info("💡 Importe CSV FDJ")
-
-    if "gg" not in st.session_state: st.session_state.gg = []
-
+        df,dbg=load_csv(up,jid)
+        if df is not None and len(df)>0: reel=True; st.sidebar.success(f"✅ {len(df)} tirages")
+        else: st.sidebar.error("❌"); df=gen_simul(jid)
+    else: df=gen_simul(jid); st.sidebar.info("💡 Importe CSV")
+    if "gg" not in st.session_state: st.session_state.gg=[]
     st.sidebar.markdown("---")
-    page = st.sidebar.radio("📑", [
-        "🏠 Dashboard","🎯 Générateur Pro","📊 Stats",
+    page=st.sidebar.radio("📑",[
+        "🏠 Dashboard","🎯 Générateur","📊 Stats",
         "🔮 Suggestion","📆 Saisonnier","📈 Tendance",
-        "⏳ Retard Prédit","💰 Budget","📱 Checker",
-        "🎰 Monte Carlo","🔗 Couverture",
-        "🆚 Comparateur","🧪 Backtest","🧮 Réducteur",
-        "🏆 Hall of Fame","🔍 Debug","ℹ️ Info"])
+        "⏳ Retard","💰 Budget","📱 Checker",
+        "🎰 Monte Carlo","🔗 Couverture","🆚 Comparateur",
+        "🧪 Backtest","🧮 Réducteur","🚫 Anti-Pop",
+        "💎 Espérance","📐 Optimiseur","🏆 Hall of Fame",
+        "🔍 Debug","ℹ️ Info"])
     st.sidebar.markdown("---")
     st.sidebar.caption("⚠️ Aucune garantie de gain")
-    st.sidebar.caption("🛡️ Joueurs Info Service : 09 74 75 13 13")
+    st.sidebar.caption("🛡️ 09 74 75 13 13")
+    stats=calc_stats(df.to_json(),jid)
+    bdg="🟢 Réelles" if reel else "🟡 Simulées"
 
-    stats = calc_stats(df.to_json(), jeu_id)
-    bdg = "🟢 Données réelles" if reel else "🟡 Données simulées"
-
-    # ══════════════════════════════
+    # ══════════════════
     # DASHBOARD
-    # ══════════════════════════════
-    if page == "🏠 Dashboard":
-        st.markdown("<div class='main-header'>🏠 Dashboard</div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='sub-header'>{jeu['nom']} — {bdg} — {stats['nb_tirages']} tirages</div>", unsafe_allow_html=True)
-
-        d = df.iloc[0]; bs = [int(d[f"boule_{i}"]) for i in range(1,6)]
-        et_d = [int(d[f"etoile_{i}"]) for i in range(1,jeu["nb_etoiles"]+1)] if jeu["nb_etoiles"] and "etoile_1" in df.columns else []
-        st.subheader(f"🎱 Dernier tirage — {d['date']}")
-        st.markdown(html_grille(bs, et_d, stats, jeu_id), unsafe_allow_html=True)
-
-        recos = auto_suggestion(stats, jeu_id)
-        if recos:
-            best = recos[0]
-            st.markdown(f"<div class='reco-card'>🔮 <b>Recommandation :</b> Mode <b>{best['mode'].upper()}</b> — {best['raison']} (confiance {best['confiance']}%)</div>", unsafe_allow_html=True)
-
-        st.subheader("📋 10 derniers tirages")
-        dern = []
+    # ══════════════════
+    if page=="🏠 Dashboard":
+        st.markdown("<div class='main-header'>🏠 Dashboard</div>",unsafe_allow_html=True)
+        st.markdown(f"<div class='sub-header'>{jeu['nom']} — {bdg} — {stats['nb_tirages']} tirages</div>",unsafe_allow_html=True)
+        d=df.iloc[0]; bs=[int(d[f"boule_{i}"]) for i in range(1,6)]
+        et_d=[int(d[f"etoile_{i}"]) for i in range(1,jeu["nb_etoiles"]+1)] if jeu["nb_etoiles"] and "etoile_1" in df.columns else []
+        st.subheader(f"🎱 Dernier — {d['date']}")
+        st.markdown(html_gr(bs,et_d,stats,jid),unsafe_allow_html=True)
+        rc=auto_sug(stats,jid)
+        if rc:
+            b=rc[0]
+            st.markdown(f"<div class='reco-card'>🔮 <b>Recommandation :</b> Mode <b>{b['m'].upper()}</b> — {b['r']} (confiance {b['c']}%)</div>",unsafe_allow_html=True)
+        st.subheader("📋 10 derniers")
+        dern=[]
         for i in range(min(10,len(df))):
-            r = df.iloc[i]
-            t = " - ".join(str(int(r[f"boule_{j}"])) for j in range(1,6))
-            e = f"⭐{int(r['etoile_1'])} ⭐{int(r['etoile_2'])}" if jeu["nb_etoiles"] and "etoile_1" in df.columns else ""
-            dern.append({"📅":str(r["date"]), "🎱":t, "⭐":e})
-        st.dataframe(pd.DataFrame(dern), hide_index=True, use_container_width=True)
-
+            r=df.iloc[i]
+            t=" - ".join(str(int(r[f"boule_{j}"])) for j in range(1,6))
+            e=f"⭐{int(r['etoile_1'])} ⭐{int(r['etoile_2'])}" if jeu["nb_etoiles"] and "etoile_1" in df.columns else ""
+            dern.append({"📅":str(r["date"]),"🎱":t,"⭐":e})
+        st.dataframe(pd.DataFrame(dern),hide_index=True,use_container_width=True)
         st.markdown("---")
-        c1, c2 = st.columns(2)
+        c1,c2=st.columns(2)
         with c1:
             st.subheader("🔥 Top 10 Chauds")
-            ch = sorted(stats["boules"].values(), key=lambda x:x["chaleur"], reverse=True)[:10]
-            st.dataframe(pd.DataFrame(ch)[["numero","chaleur","f20","ecart","tend","proba"]].rename(
-                columns={"numero":"N°","chaleur":"🌡️","f20":"F20","ecart":"Éc.","tend":"📈","proba":"P%"}),
-                hide_index=True, use_container_width=True)
+            ch=sorted(stats["boules"].values(),key=lambda x:x["chaleur"],reverse=True)[:10]
+            st.dataframe(pd.DataFrame(ch)[["numero","chaleur","f20","ecart","tend","proba"]].rename(columns={"numero":"N°","chaleur":"🌡️","f20":"F20","ecart":"Éc.","tend":"📈","proba":"P%"}),hide_index=True,use_container_width=True)
         with c2:
             st.subheader("⏳ Top 10 Retard")
-            rt = sorted(stats["boules"].values(), key=lambda x:x["retard"])[:10]
-            st.dataframe(pd.DataFrame(rt)[["numero","retard","ecart","ecart_moy","proba"]].rename(
-                columns={"numero":"N°","retard":"⏳","ecart":"Éc.","ecart_moy":"Moy","proba":"P%"}),
-                hide_index=True, use_container_width=True)
-
-        st.subheader("💑 Paires fréquentes")
-        pd_d = [{"Paire":f"{p[0][0]}—{p[0][1]}","Freq":p[1]} for p in stats["paires"][:10]]
-        c1,c2 = st.columns(2)
-        with c1: st.dataframe(pd.DataFrame(pd_d[:5]), hide_index=True, use_container_width=True)
-        with c2: st.dataframe(pd.DataFrame(pd_d[5:]), hide_index=True, use_container_width=True)
-
+            rt=sorted(stats["boules"].values(),key=lambda x:x["retard"])[:10]
+            st.dataframe(pd.DataFrame(rt)[["numero","retard","ecart","ecart_moy","proba"]].rename(columns={"numero":"N°","retard":"⏳","ecart":"Éc.","ecart_moy":"Moy","proba":"P%"}),hide_index=True,use_container_width=True)
+        st.subheader("💑 Paires")
+        pd_=[{"Paire":f"{p[0][0]}—{p[0][1]}","Freq":p[1]} for p in stats["paires"][:10]]
+        c1,c2=st.columns(2)
+        with c1: st.dataframe(pd.DataFrame(pd_[:5]),hide_index=True,use_container_width=True)
+        with c2: st.dataframe(pd.DataFrame(pd_[5:]),hide_index=True,use_container_width=True)
         if stats["etoiles"]:
             st.subheader("⭐ Étoiles")
-            st.dataframe(pd.DataFrame([{"⭐":f"E{s['numero']}","Éc.":s["ecart"],"F20":s["f20"]} for s in stats["etoiles"].values()]),
-                hide_index=True, use_container_width=True)
+            st.dataframe(pd.DataFrame([{"⭐":f"E{s['numero']}","Éc.":s["ecart"],"F20":s["f20"]} for s in stats["etoiles"].values()]),hide_index=True,use_container_width=True)
 
-    # ══════════════════════════════
-    # GÉNÉRATEUR PRO
-    # ══════════════════════════════
-    elif page == "🎯 Générateur Pro":
-        st.markdown("<div class='main-header'>🎯 Générateur Pro</div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='sub-header'>{bdg} — 10 modes × 10 critères</div>", unsafe_allow_html=True)
-
-        c1, c2, c3 = st.columns(3)
+    # ══════════════════
+    # GÉNÉRATEUR
+    # ══════════════════
+    elif page=="🎯 Générateur":
+        st.markdown("<div class='main-header'>🎯 Générateur Pro</div>",unsafe_allow_html=True)
+        st.markdown(f"<div class='sub-header'>{bdg}</div>",unsafe_allow_html=True)
+        c1,c2,c3=st.columns(3)
         with c1:
-            mode = st.selectbox("Mode", ["aleatoire","chaud","froid","top","hybride","optimal","probabiliste","tendance","retard","contrarian"],
+            mode=st.selectbox("Mode",["aleatoire","chaud","froid","top","hybride","optimal","probabiliste","tendance","retard","contrarian"],
                 format_func=lambda x:{"aleatoire":"🎲 Aléatoire","chaud":"🔥 Chauds","froid":"🧊 Froids","top":"⭐ Top","hybride":"🧠 Hybride","optimal":"🏆 Optimal","probabiliste":"📊 Proba","tendance":"📈 Tendance","retard":"⏳ Retard","contrarian":"🔄 Contrarian"}[x])
-            if mode == "optimal":
-                pw_ch = st.slider("🌡️ Chaleur",0,100,50)
-                pw_ec = st.slider("📏 Écart",0,100,50)
-                pw_pr = st.slider("📊 Proba",0,100,50)
+            if mode=="optimal":
+                pw_ch=st.slider("🌡️ Chaleur",0,100,50); pw_ec=st.slider("📏 Écart",0,100,50); pw_pr=st.slider("📊 Proba",0,100,50)
             else: pw_ch=pw_ec=pw_pr=50
         with c2:
-            fi = st.text_input("🔒 Forcés", placeholder="7, 14")
-            forces = [int(n.strip()) for n in fi.split(",") if n.strip().isdigit() and 1<=int(n.strip())<=jeu["boules_max"]][:3] if fi else []
-            chasseur = st.slider("🎯 Écart min", 0, 30, 0)
-            plafond = st.selectbox("🔝", ["aucun","moins_40","force_40"], format_func=lambda x:{"aucun":"—","moins_40":"<40","force_40":"≥40"}[x])
-            ee = st.slider("⭐ Éc. étoiles", 0, 8, 2) if jeu["nb_etoiles"] else 0
-            nbg = st.selectbox("Grilles", [1,3,5,10], index=1)
+            fi=st.text_input("🔒 Forcés",placeholder="7, 14")
+            forces=[int(n.strip()) for n in fi.split(",") if n.strip().isdigit() and 1<=int(n.strip())<=jeu["boules_max"]][:3] if fi else []
+            chasseur=st.slider("🎯 Écart min",0,30,0)
+            plafond=st.selectbox("🔝",["aucun","moins_40","force_40"],format_func=lambda x:{"aucun":"—","moins_40":"<40","force_40":"≥40"}[x])
+            ee=st.slider("⭐ Éc.ét.",0,8,2) if jeu["nb_etoiles"] else 0
+            nbg=st.selectbox("Grilles",[1,3,5,10],index=1)
         with c3:
-            fpa = st.checkbox("⚖️ Parité", True)
-            fso = st.checkbox("➕ Somme", True)
-            fdi = st.checkbox("📊 Dizaines", True)
-            fan = st.checkbox("🚫 Anti-suite", True)
-            ftm = st.checkbox("🔢 Terminaisons diversifiées", False)
-            fbh = st.checkbox("⬆️⬇️ Bas/Hauts équilibrés", False)
-
-        if st.button("🎱 GÉNÉRER", type="primary", use_container_width=True):
-            ag = []
+            fpa=st.checkbox("⚖️ Parité",True); fso=st.checkbox("➕ Somme",True)
+            fdi=st.checkbox("📊 Dizaines",True); fan=st.checkbox("🚫 Suite",True)
+            ftm=st.checkbox("🔢 Terminaisons",False); fbh=st.checkbox("⬆️⬇️ Bas/Hauts",False)
+        if st.button("🎱 GÉNÉRER",type="primary",use_container_width=True):
+            ag=[]
             for gi in range(nbg):
-                r = gen_grille(jeu_id, stats, mode, fpa, fso, fdi, fan, chasseur, forces, ee, plafond, ftm, fbh, pw_ch, pw_ec, pw_pr)
+                r=gen_grille(jid,stats,mode,fpa,fso,fdi,fan,chasseur,forces,ee,plafond,ftm,fbh,pw_ch,pw_ec,pw_pr)
                 ag.append(r)
-                st.markdown(f"#### Grille {gi+1}/{nbg}")
-                st.markdown(html_grille(r["grille"], r["etoiles"], stats, jeu_id), unsafe_allow_html=True)
-                show_score(r["score"])
+                st.markdown(f"#### G{gi+1}/{nbg}")
+                st.markdown(html_gr(r["grille"],r["etoiles"],stats,jid),unsafe_allow_html=True)
+                show_sc(r["score"])
                 with st.expander(f"📋 Détail G{gi+1}"):
-                    det = [{"N°":b,"🌡️":stats["boules"][b]["chaleur"],"Éc.":stats["boules"][b]["ecart"],
-                        "P%":stats["boules"][b]["proba"],"📈":stats["boules"][b]["tend"],
-                        "⏳":stats["boules"][b]["retard"],"Dern.":stats["boules"][b]["dern"]} for b in r["grille"]]
-                    st.dataframe(pd.DataFrame(det), hide_index=True, use_container_width=True)
+                    det=[{"N°":b,"🌡️":stats["boules"][b]["chaleur"],"Éc.":stats["boules"][b]["ecart"],"P%":stats["boules"][b]["proba"],"📈":stats["boules"][b]["tend"],"⏳":stats["boules"][b]["retard"]} for b in r["grille"]]
+                    st.dataframe(pd.DataFrame(det),hide_index=True,use_container_width=True)
                 st.markdown("---")
-
             st.session_state.gg.extend([{"g":r["grille"],"e":r["etoiles"],"s":r["score"]["total"],"m":mode,"t":datetime.now().strftime("%H:%M")} for r in ag])
+            st.subheader("📱 Buraliste")
+            for i,r in enumerate(ag):
+                gs=" — ".join(str(n) for n in r["grille"])
+                es=f"  |  ⭐ {' — '.join(str(e) for e in r['etoiles'])}" if r["etoiles"] else ""
+                st.markdown(f"<div class='buraliste-card'>G{i+1} : {gs}{es}</div>",unsafe_allow_html=True)
+            exp="".join(f"G{i+1}: {' - '.join(str(n) for n in r['grille'])}{' | E:'+' - '.join(str(e) for e in r['etoiles']) if r['etoiles'] else ''} (S:{r['score']['total']})\n" for i,r in enumerate(ag))
+            st.download_button("📥 Télécharger",exp,f"grilles-{datetime.now().strftime('%Y%m%d')}.txt")
 
-            st.subheader("📱 Mode Buraliste")
-            for i, r in enumerate(ag):
-                gs = " — ".join(str(n) for n in r["grille"])
-                es = f"  |  ⭐ {' — '.join(str(e) for e in r['etoiles'])}" if r["etoiles"] else ""
-                st.markdown(f"<div class='buraliste-card'>G{i+1} : {gs}{es}</div>", unsafe_allow_html=True)
-
-            exp = "".join(f"G{i+1}: {' - '.join(str(n) for n in r['grille'])}{' | E:'+' - '.join(str(e) for e in r['etoiles']) if r['etoiles'] else ''} (Score:{r['score']['total']})\n" for i,r in enumerate(ag))
-            st.download_button("📥 Télécharger", exp, f"grilles-{datetime.now().strftime('%Y%m%d')}.txt")
-
-    # ══════════════════════════════
+    # ══════════════════
     # STATS
-    # ══════════════════════════════
-    elif page == "📊 Stats":
-        st.markdown("<div class='main-header'>📊 Statistiques</div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='sub-header'>{bdg} — {stats['nb_tirages']} tirages</div>", unsafe_allow_html=True)
-
+    # ══════════════════
+    elif page=="📊 Stats":
+        st.markdown("<div class='main-header'>📊 Statistiques</div>",unsafe_allow_html=True)
+        st.markdown(f"<div class='sub-header'>{bdg} — {stats['nb_tirages']} tirages</div>",unsafe_allow_html=True)
         st.subheader("🌡️ Carte de Chaleur")
         nc=10; nr=(jeu["boules_max"]+nc-1)//nc; zd=[]; td=[]
         for row in range(nr):
@@ -682,8 +541,7 @@ def main():
             for col in range(nc):
                 n=row*nc+col+1
                 if n<=jeu["boules_max"]:
-                    s=stats["boules"][n]
-                    zr.append(s["chaleur"])
+                    s=stats["boules"][n]; zr.append(s["chaleur"])
                     tr.append(f"N°{n}<br>🌡️{s['chaleur']}<br>P:{s['proba']}%<br>Éc:{s['ecart']}<br>{s['tend']}")
                 else: zr.append(None); tr.append("")
             zd.append(zr); td.append(tr)
@@ -693,430 +551,476 @@ def main():
                 n=row*nc+col+1
                 if n<=jeu["boules_max"]: fh.add_annotation(x=col,y=row,text=str(n),showarrow=False,font=dict(color="white",size=14))
         fh.update_layout(height=350,margin=dict(l=20,r=20,t=20,b=20),xaxis=dict(showticklabels=False),yaxis=dict(showticklabels=False))
-        st.plotly_chart(fh, use_container_width=True)
-
+        st.plotly_chart(fh,use_container_width=True)
         st.subheader("📋 Tableau complet")
-              elif page == "📊 Stats":
-        st.markdown("<div class='main-header'>📊 Statistiques</div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='sub-header'>{bdg} — {stats['nb_tirages']} tirages</div>", unsafe_allow_html=True)
+        tri=st.selectbox("Trier par",["Chaleur","Écart","Proba","F20","Retard","% Record"])
+        col_map={"Chaleur":"🌡️","Écart":"Éc.","Proba":"P%","F20":"F20","Retard":"⏳","% Record":"%Rec"}
+        dfc=pd.DataFrame([{
+            "N°":n,"🌡️":stats["boules"][n]["chaleur"],"Éc.":stats["boules"][n]["ecart"],
+            "Moy":stats["boules"][n]["ecart_moy"],"Max":stats["boules"][n]["ecart_max"],
+            "P%":stats["boules"][n]["proba"],"📈":stats["boules"][n]["tend"],
+            "F20":stats["boules"][n]["f20"],"F12m":stats["boules"][n]["f12m"],
+            "⏳":stats["boules"][n]["retard"],"%Rec":stats["boules"][n]["ratio_rec"]
+        } for n in range(1,jeu["boules_max"]+1)])
+        col_tri=col_map.get(tri,"🌡️")
+        st.dataframe(dfc.sort_values(col_tri,ascending=(tri in ["Écart","Retard"])),hide_index=True,use_container_width=True,height=500)
 
-        st.subheader("🌡️ Carte de Chaleur")
-        nc=10; nr=(jeu["boules_max"]+nc-1)//nc; zd=[]; td=[]
-        for row in range(nr):
-            zr=[]; tr=[]
-            for col in range(nc):
-                n=row*nc+col+1
-                if n<=jeu["boules_max"]:
-                    s=stats["boules"][n]
-                    zr.append(s["chaleur"])
-                    tr.append(f"N°{n}<br>🌡️{s['chaleur']}<br>P:{s['proba']}%<br>Éc:{s['ecart']}<br>{s['tend']}")
-                else: zr.append(None); tr.append("")
-            zd.append(zr); td.append(tr)
-        fh=go.Figure(data=go.Heatmap(z=zd,text=td,hoverinfo="text",colorscale=[[0,"#1e3a5f"],[.5,"#f59e0b"],[1,"#ef4444"]],showscale=True))
-        for row in range(nr):
-            for col in range(nc):
-                n=row*nc+col+1
-                if n<=jeu["boules_max"]: fh.add_annotation(x=col,y=row,text=str(n),showarrow=False,font=dict(color="white",size=14))
-        fh.update_layout(height=350,margin=dict(l=20,r=20,t=20,b=20),xaxis=dict(showticklabels=False),yaxis=dict(showticklabels=False))
-        st.plotly_chart(fh, use_container_width=True)
-
-        st.subheader("📋 Tableau complet")
-        tri = st.selectbox("Trier par", ["Chaleur","Écart","Proba","F20","Retard","% Record"])
-        cm = {"Chaleur":"🌡️","Écart":"Éc.","Proba":"P%","F20":"F20","Retard":"⏳","% Record":"%Rec"}
-        dfc = pd.DataFrame([{
-            "N°":n,
-            "🌡️":stats["boules"][n]["chaleur"],
-            "Éc.":stats["boules"][n]["ecart"],
-            "Moy":stats["boules"][n]["ecart_moy"],
-            "Max":stats["boules"][n]["ecart_max"],
-            "P%":stats["boules"][n]["proba"],
-            "📈":stats["boules"][n]["tend"],
-            "F20":stats["boules"][n]["f20"],
-            "F12m":stats["boules"][n]["f12m"],
-            "⏳":stats["boules"][n]["retard"],
-            "%Rec":stats["boules"][n]["ratio_rec"]
-        } for n in range(1, jeu["boules_max"]+1)])
-        col_tri = cm.get(tri, "🌡️")
-        st.dataframe(dfc.sort_values(col_tri, ascending=(tri in ["Écart","Retard"])),
-            hide_index=True, use_container_width=True, height=500)
-
-    # ══════════════════════════════
-    # 🔮 SUGGESTION
-    # ══════════════════════════════
-    elif page == "🔮 Suggestion":
-        st.markdown("<div class='main-header'>🔮 Auto-Suggestion</div>", unsafe_allow_html=True)
-        st.markdown("<div class='sub-header'>L'outil recommande la meilleure stratégie</div>", unsafe_allow_html=True)
-
-        recos = auto_suggestion(stats, jeu_id)
-        for i, r in enumerate(recos):
-            emoji = {"tendance":"📈","retard":"⏳","probabiliste":"📊","froid":"🧊","chaud":"🔥","optimal":"🏆"}.get(r["mode"],"🎯")
-            medal = "🥇" if i==0 else ("🥈" if i==1 else ("🥉" if i==2 else f"#{i+1}"))
-            conf_color = "#22c55e" if r["confiance"]>=75 else ("#f59e0b" if r["confiance"]>=60 else "#3b82f6")
-            st.markdown(f"<div class='reco-card'><span style='font-size:1.5rem;'>{medal} {emoji} <b>{r['mode'].upper()}</b></span><br><b>Raison :</b> {r['raison']}<br><b>Confiance :</b> <span style='color:{conf_color};font-weight:bold;'>{r['confiance']}%</span></div>", unsafe_allow_html=True)
-
-        st.markdown("---")
-        if st.button("🎱 Générer avec la meilleure suggestion", type="primary", use_container_width=True):
-            best = recos[0]["mode"]
+    # ══════════════════
+    # SUGGESTION
+    # ══════════════════
+    elif page=="🔮 Suggestion":
+        st.markdown("<div class='main-header'>🔮 Auto-Suggestion</div>",unsafe_allow_html=True)
+        rc=auto_sug(stats,jid)
+        for i,r in enumerate(rc):
+            em={"tendance":"📈","retard":"⏳","probabiliste":"📊","froid":"🧊","chaud":"🔥","optimal":"🏆"}.get(r["m"],"🎯")
+            md="🥇" if i==0 else ("🥈" if i==1 else ("🥉" if i==2 else f"#{i+1}"))
+            cc="#22c55e" if r["c"]>=75 else ("#f59e0b" if r["c"]>=60 else "#3b82f6")
+            st.markdown(f"<div class='reco-card'><span style='font-size:1.5rem;'>{md} {em} <b>{r['m'].upper()}</b></span><br><b>Raison :</b> {r['r']}<br><b>Confiance :</b> <span style='color:{cc};font-weight:bold;'>{r['c']}%</span></div>",unsafe_allow_html=True)
+        if st.button("🎱 Générer avec la meilleure",type="primary",use_container_width=True):
             for i in range(3):
-                r = gen_grille(jeu_id, stats, best, True, True, True, True)
-                st.markdown(f"#### G{i+1} (mode {best})")
-                st.markdown(html_grille(r["grille"], r["etoiles"], stats, jeu_id), unsafe_allow_html=True)
-                show_score(r["score"]); st.markdown("---")
+                r=gen_grille(jid,stats,rc[0]["m"],True,True,True,True)
+                st.markdown(f"#### G{i+1}"); st.markdown(html_gr(r["grille"],r["etoiles"],stats,jid),unsafe_allow_html=True)
+                show_sc(r["score"]); st.markdown("---")
 
-    # ══════════════════════════════
-    # 📆 SAISONNIER
-    # ══════════════════════════════
-    elif page == "📆 Saisonnier":
-        st.markdown("<div class='main-header'>📆 Analyse Saisonnière</div>", unsafe_allow_html=True)
-        mois_noms = {1:"Janvier",2:"Février",3:"Mars",4:"Avril",5:"Mai",6:"Juin",7:"Juillet",8:"Août",9:"Septembre",10:"Octobre",11:"Novembre",12:"Décembre"}
+    # ══════════════════
+    # SAISONNIER
+    # ══════════════════
+    elif page=="📆 Saisonnier":
+        st.markdown("<div class='main-header'>📆 Saisonnier</div>",unsafe_allow_html=True)
+        mn={1:"Janvier",2:"Février",3:"Mars",4:"Avril",5:"Mai",6:"Juin",7:"Juillet",8:"Août",9:"Septembre",10:"Octobre",11:"Novembre",12:"Décembre"}
         if stats["saison"]:
-            mois_choisi = st.selectbox("Mois", list(stats["saison"].keys()), format_func=lambda x:mois_noms.get(x,f"Mois {x}"))
-            if mois_choisi in stats["saison"]:
-                sm = stats["saison"][mois_choisi]
-                st.info(f"📅 {mois_noms.get(mois_choisi,'')} : {sm['nb']} tirages")
-                st.subheader(f"🔥 Top numéros de {mois_noms.get(mois_choisi,'')}")
-                for n, freq in sm["top"]:
-                    st.markdown(f"**N°{n}** — sorti **{freq} fois**")
-        else: st.warning("Données saisonnières insuffisantes")
+            mc=st.selectbox("Mois",list(stats["saison"].keys()),format_func=lambda x:mn.get(x,f"M{x}"))
+            if mc in stats["saison"]:
+                sm=stats["saison"][mc]
+                st.info(f"📅 {mn.get(mc,'')} : {sm['nb']} tirages")
+                st.subheader(f"🔥 Top numéros de {mn.get(mc,'')}")
+                for n,f in sm["top"]: st.markdown(f"**N°{n}** — sorti **{f} fois**")
+        else: st.warning("Données insuffisantes")
 
-    # ══════════════════════════════
-    # 📈 TENDANCE
-    # ══════════════════════════════
-    elif page == "📈 Tendance":
-        st.markdown("<div class='main-header'>📈 Tendance Glissante</div>", unsafe_allow_html=True)
-        num_t = st.number_input("Numéro", 1, jeu["boules_max"], 7)
-        fenetre = st.slider("Fenêtre (tirages)", 10, 100, 30)
-        cols_b = [f"boule_{i}" for i in range(1,6)]
-        presences = []
-        for idx, row in df.iterrows():
-            p = 1 if num_t in [int(row[c]) for c in cols_b] else 0
-            presences.append({"idx":idx,"date":row["date"],"present":p})
-        if presences:
-            dfp = pd.DataFrame(presences)
-            dfp["ma"] = dfp["present"].rolling(window=fenetre, min_periods=1).mean()*100
-            dfp["date"] = pd.to_datetime(dfp["date"])
-            fig_ma = go.Figure()
-            fig_ma.add_trace(go.Scatter(x=dfp["date"],y=dfp["ma"],mode="lines",name=f"MA {fenetre}",line=dict(color="#3b82f6",width=2)))
-            freq_th = 5/jeu["boules_max"]*100
-            fig_ma.add_hline(y=freq_th, line_dash="dash", line_color="#ef4444", annotation_text=f"Théorique: {freq_th:.1f}%")
-            fig_ma.update_layout(height=400, title=f"N°{num_t} — Fréquence glissante", xaxis_title="Date", yaxis_title="%")
-            st.plotly_chart(fig_ma, use_container_width=True)
-            last_ma = dfp["ma"].iloc[0]
-            if last_ma > freq_th*1.3:
-                st.markdown(f"<div class='success-card'>🔥 Le N°{num_t} est <b>au-dessus</b> de sa fréquence théorique ({last_ma:.1f}% vs {freq_th:.1f}%)</div>", unsafe_allow_html=True)
-            elif last_ma < freq_th*0.7:
-                st.markdown(f"<div class='alert-card'>🧊 Le N°{num_t} est <b>en-dessous</b> ({last_ma:.1f}% vs {freq_th:.1f}%)</div>", unsafe_allow_html=True)
+    # ══════════════════
+    # TENDANCE
+    # ══════════════════
+    elif page=="📈 Tendance":
+        st.markdown("<div class='main-header'>📈 Tendance Glissante</div>",unsafe_allow_html=True)
+        nt=st.number_input("Numéro",1,jeu["boules_max"],7)
+        fen=st.slider("Fenêtre",10,100,30)
+        CB=[f"boule_{i}" for i in range(1,6)]
+        pr=[]
+        for idx,row in df.iterrows():
+            p=1 if nt in [int(row[c]) for c in CB] else 0
+            pr.append({"idx":idx,"date":row["date"],"p":p})
+        if pr:
+            dp=pd.DataFrame(pr); dp["ma"]=dp["p"].rolling(window=fen,min_periods=1).mean()*100
+            dp["date"]=pd.to_datetime(dp["date"])
+            fig=go.Figure()
+            fig.add_trace(go.Scatter(x=dp["date"],y=dp["ma"],mode="lines",name=f"MA{fen}",line=dict(color="#3b82f6",width=2)))
+            ft=5/jeu["boules_max"]*100
+            fig.add_hline(y=ft,line_dash="dash",line_color="#ef4444",annotation_text=f"Théo: {ft:.1f}%")
+            fig.update_layout(height=400,title=f"N°{nt}",xaxis_title="Date",yaxis_title="%")
+            st.plotly_chart(fig,use_container_width=True)
+            lm=dp["ma"].iloc[0]
+            if lm>ft*1.3: st.markdown(f"<div class='success-card'>🔥 Au-dessus ({lm:.1f}% vs {ft:.1f}%)</div>",unsafe_allow_html=True)
+            elif lm<ft*0.7: st.markdown(f"<div class='alert-card'>🧊 En-dessous ({lm:.1f}% vs {ft:.1f}%)</div>",unsafe_allow_html=True)
+            else: st.markdown(f"<div class='insight-card'>→ Normal ({lm:.1f}% vs {ft:.1f}%)</div>",unsafe_allow_html=True)
+
+    # ══════════════════
+    # RETARD
+    # ══════════════════
+    elif page=="⏳ Retard":
+        st.markdown("<div class='main-header'>⏳ Retard Prédit</div>",unsafe_allow_html=True)
+        ret=sorted(stats["boules"].values(),key=lambda x:x["retard"])
+        st.subheader("🔴 En retard (≤ 0)")
+        er=[s for s in ret if s["retard"]<=0]
+        if er:
+            for s in er: st.markdown(f"🔴 **N°{s['numero']}** — Éc: {s['ecart']} (moy: {s['ecart_moy']}) — retard {abs(s['retard'])} — P={s['proba']}%")
+        else: st.info("Aucun")
+        st.subheader("🟡 Bientôt (1-3)")
+        for s in [s for s in ret if 1<=s["retard"]<=3]: st.markdown(f"🟡 **N°{s['numero']}** — ~{s['retard']} tirages — Éc: {s['ecart']}/{s['ecart_moy']}")
+        st.subheader("🟢 Pas encore (> 3)")
+        for s in [s for s in ret if s["retard"]>3][:10]: st.markdown(f"🟢 N°{s['numero']} — ~{s['retard']} — Éc: {s['ecart']}/{s['ecart_moy']}")
+        st.markdown("<div class='insight-card'>💡 Retard = écart moyen − écart actuel. Chaque tirage est indépendant.</div>",unsafe_allow_html=True)
+        if st.button("🎯 Grille retard",type="primary"):
+            r=gen_grille(jid,stats,"retard",True,True,True,True)
+            st.markdown(html_gr(r["grille"],r["etoiles"],stats,jid),unsafe_allow_html=True); show_sc(r["score"])
+
+    # ══════════════════
+    # BUDGET
+    # ══════════════════
+    elif page=="💰 Budget":
+        st.markdown("<div class='main-header'>💰 Budget</div>",unsafe_allow_html=True)
+        budget=st.number_input("💶 Budget (€)",min_value=jeu["prix"],max_value=100.0,value=10.0,step=jeu["prix"])
+        nbp=int(budget/jeu["prix"]); st.info(f"**{nbp} grilles** pour {budget}€")
+        strat=st.selectbox("Stratégie",["🎯 Même mode","🔀 Mix","🏆 Optimisation max"])
+        if st.button("💰 PLANIFIER",type="primary",use_container_width=True):
+            gr=[]
+            if strat.startswith("🎯"):
+                for _ in range(nbp): gr.append(gen_grille(jid,stats,"optimal",True,True,True,True))
+            elif strat.startswith("🔀"):
+                ms=["chaud","froid","probabiliste","tendance","optimal"]
+                for i in range(nbp): gr.append(gen_grille(jid,stats,ms[i%len(ms)],True,True,True,True))
             else:
-                st.markdown(f"<div class='insight-card'>→ Le N°{num_t} est dans la norme ({last_ma:.1f}% vs {freq_th:.1f}%)</div>", unsafe_allow_html=True)
+                cands=[gen_grille(jid,stats,"optimal",True,True,True,True) for _ in range(nbp*5)]
+                cands.sort(key=lambda x:x["score"]["total"],reverse=True); gr=cands[:nbp]
+            tous=set()
+            for r in gr: tous|=set(r["grille"])
+            c1,c2,c3=st.columns(3)
+            c1.metric("Grilles",len(gr)); c2.metric("Couverture",f"{len(tous)/jeu['boules_max']*100:.0f}%")
+            c3.metric("Score moy",f"{np.mean([r['score']['total'] for r in gr]):.0f}/100")
+            for i,r in enumerate(gr):
+                gs=" — ".join(str(n) for n in r["grille"])
+                es=f" | ⭐{' — '.join(str(e) for e in r['etoiles'])}" if r["etoiles"] else ""
+                st.markdown(f"<div class='buraliste-card'>G{i+1} : {gs}{es} — S:{r['score']['total']}</div>",unsafe_allow_html=True)
 
-    # ══════════════════════════════
-    # ⏳ RETARD PRÉDIT
-    # ══════════════════════════════
-    elif page == "⏳ Retard Prédit":
-        st.markdown("<div class='main-header'>⏳ Retard Prédit</div>", unsafe_allow_html=True)
-        st.markdown("<div class='sub-header'>Estimation du nombre de tirages avant la prochaine sortie</div>", unsafe_allow_html=True)
-        retards = sorted(stats["boules"].values(), key=lambda x:x["retard"])
-
-        st.subheader("🔴 En retard (retard ≤ 0)")
-        en_retard = [s for s in retards if s["retard"]<=0]
-        if en_retard:
-            for s in en_retard:
-                st.markdown(f"🔴 **N°{s['numero']}** — Écart: {s['ecart']} (moy: {s['ecart_moy']}) — **en retard de {abs(s['retard'])}** — P={s['proba']}%")
-        else: st.info("Aucun numéro en retard")
-
-        st.subheader("🟡 Bientôt (retard 1-3)")
-        bientot = [s for s in retards if 1<=s["retard"]<=3]
-        for s in bientot:
-            st.markdown(f"🟡 **N°{s['numero']}** — ~{s['retard']} tirages restants — Éc: {s['ecart']}/{s['ecart_moy']}")
-
-        st.subheader("🟢 Pas encore (retard > 3)")
-        for s in [s for s in retards if s["retard"]>3][:10]:
-            st.markdown(f"🟢 N°{s['numero']} — ~{s['retard']} tirages — Éc: {s['ecart']}/{s['ecart_moy']}")
-
-        st.markdown("<div class='insight-card'>💡 <b>Retard prédit</b> = écart moyen − écart actuel. Ce n'est pas une prédiction — chaque tirage est indépendant.</div>", unsafe_allow_html=True)
-
-        if st.button("🎯 Grille avec les numéros en retard", type="primary"):
-            r = gen_grille(jeu_id, stats, "retard", True, True, True, True)
-            st.markdown(html_grille(r["grille"], r["etoiles"], stats, jeu_id), unsafe_allow_html=True)
-            show_score(r["score"])
-
-    # ══════════════════════════════
-    # 💰 BUDGET
-    # ══════════════════════════════
-    elif page == "💰 Budget":
-        st.markdown("<div class='main-header'>💰 Planificateur Budget</div>", unsafe_allow_html=True)
-        budget = st.number_input("💶 Budget (€)", min_value=jeu["prix"], max_value=100.0, value=10.0, step=jeu["prix"])
-        nb_possible = int(budget / jeu["prix"])
-        st.info(f"Avec **{budget}€** → **{nb_possible} grilles** à {jeu['prix']}€")
-
-        strategie = st.selectbox("Stratégie", ["🎯 Même mode","🔀 Mix diversifié","🏆 Optimisation max"])
-
-        if st.button("💰 PLANIFIER", type="primary", use_container_width=True):
-            grilles = []
-            if strategie.startswith("🎯"):
-                for _ in range(nb_possible): grilles.append(gen_grille(jeu_id,stats,"optimal",True,True,True,True))
-            elif strategie.startswith("🔀"):
-                modes = ["chaud","froid","probabiliste","tendance","optimal"]
-                for i in range(nb_possible): grilles.append(gen_grille(jeu_id,stats,modes[i%len(modes)],True,True,True,True))
-            else:
-                candidates = [gen_grille(jeu_id,stats,"optimal",True,True,True,True) for _ in range(nb_possible*5)]
-                candidates.sort(key=lambda x:x["score"]["total"], reverse=True)
-                grilles = candidates[:nb_possible]
-
-            tous = set()
-            for r in grilles: tous |= set(r["grille"])
-            couv = len(tous)/jeu["boules_max"]*100
-
-            c1,c2,c3 = st.columns(3)
-            c1.metric("Grilles", len(grilles))
-            c2.metric("Couverture", f"{couv:.0f}%")
-            c3.metric("Score moyen", f"{np.mean([r['score']['total'] for r in grilles]):.0f}/100")
-
-            for i, r in enumerate(grilles):
-                gs = " — ".join(str(n) for n in r["grille"])
-                es = f" | ⭐{' — '.join(str(e) for e in r['etoiles'])}" if r["etoiles"] else ""
-                st.markdown(f"<div class='buraliste-card'>G{i+1} : {gs}{es} — Score: {r['score']['total']}</div>", unsafe_allow_html=True)
-
-    # ══════════════════════════════
-    # 📱 CHECKER
-    # ══════════════════════════════
-    elif page == "📱 Checker":
-        st.markdown("<div class='main-header'>📱 Checker Résultat</div>", unsafe_allow_html=True)
-        st.markdown("<div class='sub-header'>Entre le tirage du soir et vérifie tes grilles</div>", unsafe_allow_html=True)
-
-        ti = st.text_input("🎱 Tirage (5 numéros)", placeholder="3, 17, 28, 34, 45")
-        ei = ""
-        if jeu["nb_etoiles"]: ei = st.text_input("⭐ Étoiles", placeholder="2, 11")
-
+    # ══════════════════
+    # CHECKER
+    # ══════════════════
+    elif page=="📱 Checker":
+        st.markdown("<div class='main-header'>📱 Checker</div>",unsafe_allow_html=True)
+        ti=st.text_input("🎱 Tirage (5 numéros)",placeholder="3, 17, 28, 34, 45")
+        ei=""
+        if jeu["nb_etoiles"]: ei=st.text_input("⭐ Étoiles",placeholder="2, 11")
         if ti:
-            tirage = sorted(set(int(n.strip()) for n in ti.split(",") if n.strip().isdigit()))
-            etoiles_t = sorted(set(int(n.strip()) for n in ei.split(",") if n.strip().isdigit())) if ei else []
-
-            if len(tirage) == 5:
-                st.markdown(html_grille(tirage, etoiles_t, stats, jeu_id), unsafe_allow_html=True)
-
+            tirage=sorted(set(int(n.strip()) for n in ti.split(",") if n.strip().isdigit()))
+            etoiles_t=sorted(set(int(n.strip()) for n in ei.split(",") if n.strip().isdigit())) if ei else []
+            if len(tirage)==5:
+                st.markdown(html_gr(tirage,etoiles_t,stats,jid),unsafe_allow_html=True)
                 if st.session_state.gg:
-                    st.subheader(f"📋 Vérification de {len(st.session_state.gg)} grilles")
-                    resultats = []
-                    for i, g in enumerate(st.session_state.gg):
-                        communs = set(g["g"]) & set(tirage)
-                        etoiles_ok = set(g.get("e",[])) & set(etoiles_t) if etoiles_t else set()
-                        resultats.append({"idx":i+1,"grille":g["g"],"bons":len(communs),"communs":sorted(communs),"etoiles_ok":len(etoiles_ok),"mode":g["m"]})
-                    resultats.sort(key=lambda x:x["bons"], reverse=True)
+                    st.subheader(f"📋 {len(st.session_state.gg)} grilles")
+                    res=[]
+                    for i,g in enumerate(st.session_state.gg):
+                        cm=set(g["g"])&set(tirage); eo=set(g.get("e",[]))&set(etoiles_t) if etoiles_t else set()
+                        res.append({"i":i+1,"g":g["g"],"b":len(cm),"c":sorted(cm),"eo":len(eo),"m":g["m"]})
+                    res.sort(key=lambda x:x["b"],reverse=True)
+                    for r in res:
+                        em="🎉🎉" if r["b"]>=4 else ("🎉" if r["b"]==3 else ("👍" if r["b"]==2 else "—"))
+                        st.markdown(f"{em} **G{r['i']}** `{r['g']}` → **{r['b']}/5** {list(r['c'])} ({r['m']})")
+                    best=max(res,key=lambda x:x["b"])
+                    if best["b"]>=3: st.balloons(); st.markdown(f"<div class='success-card'>🎉 Meilleur : <b>{best['b']}/5</b> !</div>",unsafe_allow_html=True)
+                else: st.info("Génère des grilles d'abord !")
 
-                    for r in resultats:
-                        if r["bons"]>=4: emoji="🎉🎉"
-                        elif r["bons"]==3: emoji="🎉"
-                        elif r["bons"]==2: emoji="👍"
-                        else: emoji="—"
-                        e_str = f" + {r['etoiles_ok']}⭐" if etoiles_t else ""
-                        st.markdown(f"{emoji} **G{r['idx']}** `{r['grille']}` → **{r['bons']}/5** {list(r['communs'])}{e_str} ({r['mode']})")
-
-                    best = max(resultats, key=lambda x:x["bons"])
-                    if best["bons"] >= 3:
-                        st.balloons()
-                        st.markdown(f"<div class='success-card'>🎉 Meilleur résultat : <b>{best['bons']}/5</b> !</div>", unsafe_allow_html=True)
-                else: st.info("Aucune grille sauvegardée. Génère d'abord !")
-            else: st.warning(f"5 numéros requis ({len(tirage)} saisis)")
-
-    # ══════════════════════════════
-    # 🎰 MONTE CARLO
-    # ══════════════════════════════
-    elif page == "🎰 Monte Carlo":
-        st.markdown("<div class='main-header'>🎰 Monte Carlo</div>", unsafe_allow_html=True)
-        mode_mc = st.selectbox("Stratégie", ["aleatoire","chaud","optimal","probabiliste","retard"])
-        nb_sim = st.selectbox("Simulations", [100,500,1000], index=1)
-        budget_mc = st.number_input("Budget (€)", 10.0, 500.0, 50.0, step=10.0)
-        nb_gr_mc = int(budget_mc / jeu["prix"])
-
-        if st.button("🎰 SIMULER", type="primary", use_container_width=True):
-            with st.spinner(f"⏳ {nb_sim} simulations..."):
-                bilans = []; meilleur_rang = []
-                for _ in range(nb_sim):
-                    grilles_sim = [gen_grille(jeu_id,stats,mode_mc) for _ in range(nb_gr_mc)]
-                    tirage_sim = sorted(random.sample(range(1,jeu["boules_max"]+1),5))
-                    best_match = max(len(set(g["grille"])&set(tirage_sim)) for g in grilles_sim)
-                    gain = {0:0,1:0,2:0,3:4,4:50,5:5000}.get(best_match,0)
-                    bilans.append(gain - budget_mc); meilleur_rang.append(best_match)
-
-            c1,c2,c3 = st.columns(3)
-            c1.metric("Bilan moyen", f"{np.mean(bilans):+.2f}€")
-            c2.metric("Meilleur", f"{max(bilans):+.2f}€")
-            c3.metric("% Positif", f"{sum(1 for b in bilans if b>0)/len(bilans)*100:.1f}%")
-
-            dist = Counter(meilleur_rang)
-            fig = go.Figure(go.Bar(x=[f"{k} bons" for k in sorted(dist)],y=[dist[k] for k in sorted(dist)],
+    # ══════════════════
+    # MONTE CARLO
+    # ══════════════════
+    elif page=="🎰 Monte Carlo":
+        st.markdown("<div class='main-header'>🎰 Monte Carlo</div>",unsafe_allow_html=True)
+        mmc=st.selectbox("Stratégie",["aleatoire","chaud","optimal","probabiliste","retard"])
+        ns=st.selectbox("Simulations",[100,500,1000],index=1)
+        bmc=st.number_input("Budget (€)",10.0,500.0,50.0,step=10.0)
+        ngm=int(bmc/jeu["prix"])
+        if st.button("🎰 SIMULER",type="primary",use_container_width=True):
+            with st.spinner(f"⏳ {ns} sims..."):
+                bilans=[]; mrangs=[]
+                for _ in range(ns):
+                    gs=[gen_grille(jid,stats,mmc) for _ in range(ngm)]
+                    ts=sorted(random.sample(range(1,jeu["boules_max"]+1),5))
+                    bm=max(len(set(g["grille"])&set(ts)) for g in gs)
+                    gain={0:0,1:0,2:0,3:4,4:50,5:5000}.get(bm,0)
+                    bilans.append(gain-bmc); mrangs.append(bm)
+            c1,c2,c3=st.columns(3)
+            c1.metric("Bilan moy",f"{np.mean(bilans):+.2f}€"); c2.metric("Meilleur",f"{max(bilans):+.2f}€")
+            c3.metric("% Positif",f"{sum(1 for b in bilans if b>0)/len(bilans)*100:.1f}%")
+            dist=Counter(mrangs)
+            fig=go.Figure(go.Bar(x=[f"{k} bons" for k in sorted(dist)],y=[dist[k] for k in sorted(dist)],
                 marker_color=["#ef4444","#f97316","#f59e0b","#84cc16","#22c55e","#15803d"]))
-            fig.update_layout(height=350, title="Meilleur match par simulation")
-            st.plotly_chart(fig, use_container_width=True)
+            fig.update_layout(height=350); st.plotly_chart(fig,use_container_width=True)
 
-    # ══════════════════════════════
-    # 🔗 COUVERTURE
-    # ══════════════════════════════
-    elif page == "🔗 Couverture":
-        st.markdown("<div class='main-header'>🔗 Couverture</div>", unsafe_allow_html=True)
+    # ══════════════════
+    # COUVERTURE
+    # ══════════════════
+    elif page=="🔗 Couverture":
+        st.markdown("<div class='main-header'>🔗 Couverture</div>",unsafe_allow_html=True)
         if st.session_state.gg:
-            grilles = [g["g"] for g in st.session_state.gg]
-            tous = set()
-            for g in grilles: tous |= set(g)
-            freq_g = Counter(); 
+            grilles=[g["g"] for g in st.session_state.gg]; tous=set()
+            for g in grilles: tous|=set(g)
+            fg=Counter()
             for g in grilles:
-                for n in g: freq_g[n]+=1
-
-            st.metric("Grilles", len(grilles))
-            st.metric("Couverture", f"{len(tous)}/{jeu['boules_max']} ({len(tous)/jeu['boules_max']*100:.0f}%)")
-
+                for n in g: fg[n]+=1
+            st.metric("Grilles",len(grilles)); st.metric("Couverture",f"{len(tous)}/{jeu['boules_max']} ({len(tous)/jeu['boules_max']*100:.0f}%)")
             nc=10; nr=(jeu["boules_max"]+nc-1)//nc; zd=[]
             for row in range(nr):
                 zr=[]
                 for col in range(nc):
                     n=row*nc+col+1
-                    zr.append(freq_g.get(n,0) if n<=jeu["boules_max"] else None)
+                    zr.append(fg.get(n,0) if n<=jeu["boules_max"] else None)
                 zd.append(zr)
             fh=go.Figure(data=go.Heatmap(z=zd,colorscale=[[0,"#f1f5f9"],[.5,"#3b82f6"],[1,"#1e3a5f"]],showscale=True))
             for row in range(nr):
                 for col in range(nc):
                     n=row*nc+col+1
                     if n<=jeu["boules_max"]:
-                        color="white" if freq_g.get(n,0)>0 else "#94a3b8"
-                        fh.add_annotation(x=col,y=row,text=str(n),showarrow=False,font=dict(color=color,size=14))
-            fh.update_layout(height=350,title="Heatmap de couverture",margin=dict(l=20,r=20,t=40,b=20),xaxis=dict(showticklabels=False),yaxis=dict(showticklabels=False))
-            st.plotly_chart(fh, use_container_width=True)
-
-            manquants = sorted(set(range(1,jeu["boules_max"]+1))-tous)
-            if manquants:
-                st.warning(f"⚠️ {len(manquants)} numéros non couverts : {manquants}")
+                        cl="white" if fg.get(n,0)>0 else "#94a3b8"
+                        fh.add_annotation(x=col,y=row,text=str(n),showarrow=False,font=dict(color=cl,size=14))
+            fh.update_layout(height=350,margin=dict(l=20,r=20,t=40,b=20),xaxis=dict(showticklabels=False),yaxis=dict(showticklabels=False))
+            st.plotly_chart(fh,use_container_width=True)
+            mq=sorted(set(range(1,jeu["boules_max"]+1))-tous)
+            if mq: st.warning(f"⚠️ Non couverts : {mq}")
         else: st.info("Génère des grilles d'abord !")
 
-    # ══════════════════════════════
-    # 🆚 COMPARATEUR
-    # ══════════════════════════════
-    elif page == "🆚 Comparateur":
-        st.markdown("<div class='main-header'>🆚 Comparateur</div>", unsafe_allow_html=True)
-        nbt = st.selectbox("Tirages", [20,50,100], index=1)
-        if st.button("🆚 COMPARER", type="primary", use_container_width=True):
-            with st.spinner("⏳..."):
-                comp = {m:backtest(df,jeu_id,stats,m,nbt) for m in ["aleatoire","chaud","froid","optimal","probabiliste","tendance","retard"]}
-            cd = [{"Mode":m,"Misé":f"{r['mise']}€","Gagné":f"{r['gains']}€","Bilan":f"{r['bilan']:+.2f}€",
-                "≥3":sum(r["resultats"][str(i)] for i in range(3,6))} for m,r in comp.items()]
-            st.dataframe(pd.DataFrame(cd), hide_index=True, use_container_width=True)
+    # ══════════════════
+    # COMPARATEUR
+    # ══════════════════
+    elif page=="🆚 Comparateur":
+        st.markdown("<div class='main-header'>🆚 Comparateur</div>",unsafe_allow_html=True)
+        nbt=st.selectbox("Tirages",[20,50,100],index=1)
+        if st.button("🆚 GO",type="primary",use_container_width=True):
+            with st.spinner("⏳"):
+                comp={m:backtest(df,jid,stats,m,nbt) for m in ["aleatoire","chaud","froid","optimal","probabiliste","tendance","retard"]}
+            cd=[{"Mode":m,"Misé":f"{r['mise']}€","Gagné":f"{r['gains']}€","Bilan":f"{r['bilan']:+.2f}€",
+                "≥3":sum(r["res"][str(i)] for i in range(3,6))} for m,r in comp.items()]
+            st.dataframe(pd.DataFrame(cd),hide_index=True,use_container_width=True)
 
-    # ══════════════════════════════
-    # 🧪 BACKTEST
-    # ══════════════════════════════
-    elif page == "🧪 Backtest":
-        st.markdown("<div class='main-header'>🧪 Backtest</div>", unsafe_allow_html=True)
-        c1,c2 = st.columns(2)
-        with c1: m = st.selectbox("Mode", ["aleatoire","chaud","froid","optimal","probabiliste","tendance","retard"])
-        with c2: nt = st.selectbox("Tirages", [20,50,100,200], index=1)
-        if st.button("🚀 LANCER", type="primary", use_container_width=True):
-            with st.spinner("⏳"): rb = backtest(df, jeu_id, stats, m, nt)
-            c1,c2,c3 = st.columns(3)
-            c1.metric("💰 Misé", f"{rb['mise']}€"); c2.metric("🏆 Gagné", f"{rb['gains']}€"); c3.metric("📈 Bilan", f"{rb['bilan']:+.2f}€")
-            res = rb["resultats"]
-            fig = go.Figure(go.Bar(x=[f"{k} bons" for k in sorted(res)],y=[res[k] for k in sorted(res)],
+    # ══════════════════
+    # BACKTEST
+    # ══════════════════
+    elif page=="🧪 Backtest":
+        st.markdown("<div class='main-header'>🧪 Backtest</div>",unsafe_allow_html=True)
+        c1,c2=st.columns(2)
+        with c1: m=st.selectbox("Mode",["aleatoire","chaud","froid","optimal","probabiliste","tendance","retard"])
+        with c2: nt=st.selectbox("Tirages",[20,50,100,200],index=1)
+        if st.button("🚀",type="primary",use_container_width=True):
+            with st.spinner("⏳"): rb=backtest(df,jid,stats,m,nt)
+            c1,c2,c3=st.columns(3)
+            c1.metric("💰",f"{rb['mise']}€"); c2.metric("🏆",f"{rb['gains']}€"); c3.metric("📈",f"{rb['bilan']:+.2f}€")
+            res=rb["res"]
+            fig=go.Figure(go.Bar(x=[f"{k}" for k in sorted(res)],y=[res[k] for k in sorted(res)],
                 marker_color=["#ef4444","#f97316","#f59e0b","#84cc16","#22c55e","#15803d"]))
-            fig.update_layout(height=300); st.plotly_chart(fig, use_container_width=True)
-            if rb["hist"]:
-                st.subheader("🎯 Correspondances")
-                for h in rb["hist"][:10]:
-                    st.markdown(f"📅 **{h['date']}** — `{h['grille']}` vs `{h['tirage']}` — **{h['bons']}** — {h['gain']}€")
+            fig.update_layout(height=300); st.plotly_chart(fig,use_container_width=True)
+            for h in rb["hi"][:10]: st.markdown(f"📅 **{h['date']}** — `{h['grille']}` vs `{h['tirage']}` — **{h['bons']}** — {h['gain']}€")
 
-    # ══════════════════════════════
-    # 🧮 RÉDUCTEUR
-    # ══════════════════════════════
-    elif page == "🧮 Réducteur":
-        st.markdown("<div class='main-header'>🧮 Réducteur</div>", unsafe_allow_html=True)
+    # ══════════════════
+    # RÉDUCTEUR
+    # ══════════════════
+    elif page=="🧮 Réducteur":
+        st.markdown("<div class='main-header'>🧮 Réducteur</div>",unsafe_allow_html=True)
         with st.expander("💡 Suggestions"):
-            top_p = sorted(stats["boules"].values(), key=lambda x:x["proba"], reverse=True)[:10]
-            st.markdown(f"**Top proba :** `{', '.join(str(n['numero']) for n in top_p)}`")
-        ni = st.text_input("🔢 Numéros (6-15)", placeholder="3, 7, 14, 19, 23, 28, 34, 41")
+            tp=sorted(stats["boules"].values(),key=lambda x:x["proba"],reverse=True)[:10]
+            st.markdown(f"**Top proba :** `{', '.join(str(n['numero']) for n in tp)}`")
+        ni=st.text_input("🔢 Numéros (6-15)",placeholder="3, 7, 14, 19, 23, 28, 34, 41")
         if ni:
-            nums = sorted(set(int(n.strip()) for n in ni.split(",") if n.strip().isdigit() and 1<=int(n.strip())<=jeu["boules_max"]))
-            if len(nums) >= 6:
-                st.success(f"✅ {len(nums)} numéros : {nums}")
-                if st.button("🧮 GÉNÉRER", type="primary", use_container_width=True):
-                    grs = reducteur(nums)
-                    st.info(f"💰 {len(grs)} × {jeu['prix']}€ = **{len(grs)*jeu['prix']:.2f}€**")
-                    for i, g in enumerate(grs):
-                        st.markdown(f"<div class='grille-container'><b>G{i+1}</b>&nbsp;&nbsp;{'&nbsp;&nbsp;'.join(f'<span class=\"boule\">{b}</span>' for b in g)}</div>", unsafe_allow_html=True)
-            else: st.warning(f"Minimum 6 ({len(nums)} saisis)")
+            nums=sorted(set(int(n.strip()) for n in ni.split(",") if n.strip().isdigit() and 1<=int(n.strip())<=jeu["boules_max"]))
+            if len(nums)>=6:
+                st.success(f"✅ {len(nums)} : {nums}")
+                if st.button("🧮 GO",type="primary",use_container_width=True):
+                    grs=reducteur(nums)
+                    st.info(f"💰 {len(grs)}×{jeu['prix']}€ = **{len(grs)*jeu['prix']:.2f}€**")
+                    for i,g in enumerate(grs):
+                        st.markdown(f"<div class='grille-container'><b>G{i+1}</b>&nbsp;&nbsp;{'&nbsp;&nbsp;'.join(f'<span class=\"boule\">{b}</span>' for b in g)}</div>",unsafe_allow_html=True)
+            else: st.warning(f"Min 6 ({len(nums)})")
 
-    # ══════════════════════════════
-    # 🏆 HALL OF FAME
-    # ══════════════════════════════
-    elif page == "🏆 Hall of Fame":
-        st.markdown("<div class='main-header'>🏆 Hall of Fame</div>", unsafe_allow_html=True)
+    # ══════════════════
+    # ANTI-POP
+    # ══════════════════
+    elif page=="🚫 Anti-Pop":
+        st.markdown("<div class='main-header'>🚫 Anti-Popularité</div>",unsafe_allow_html=True)
+        st.markdown("<div class='sub-header'>Maximise ton gain en cas de victoire</div>",unsafe_allow_html=True)
+        st.markdown("""<div class='insight-card'>
+        💡 <b>Le vrai secret :</b> Tu ne peux pas augmenter tes chances de gagner.
+        Mais tu peux augmenter <b>combien</b> tu gagnes si tu gagnes.<br><br>
+        <b>Comment ?</b> En évitant les numéros que tout le monde joue.
+        Moins de partage = plus de gains pour toi.
+        </div>""",unsafe_allow_html=True)
+        st.markdown("---")
+        st.markdown("""<div class='alert-card'>
+        <b>Numéros sur-joués à ÉVITER :</b><br><br>
+        🎂 <b>1-31</b> : dates de naissance (70% des joueurs)<br>
+        7️⃣ <b>7</b> : porte-bonheur n°1 (3x plus choisi)<br>
+        🔢 <b>13, 3, 9</b> : fétiches populaires<br>
+        📏 <b>1-2-3-4-5</b> : ~10 000 personnes par tirage<br>
+        📐 <b>Multiples de 5/10</b> : sur-représentés
+        </div>""",unsafe_allow_html=True)
+        st.markdown("---")
+        st.subheader("✅ Numéros sous-joués (32-50) les plus chauds")
+        sjc=sorted([n for n in range(32,jeu["boules_max"]+1)],key=lambda x:stats["boules"][x]["chaleur"],reverse=True)[:10]
+        for n in sjc:
+            s=stats["boules"][n]
+            st.markdown(f"**N°{n}** — 🌡️ {s['chaleur']} — Éc: {s['ecart']} — {s['tend']}")
+        st.markdown("---")
+        nb_anti=st.selectbox("Numéros > 31 dans la grille",[2,3,4,5],index=1)
+        if st.button("🚫 Générer Anti-Pop",type="primary",use_container_width=True):
+            populaires={1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,20,25,30,31}
+            for gi in range(3):
+                for att in range(500):
+                    ph=[n for n in range(32,jeu["boules_max"]+1)]
+                    pb=[n for n in range(1,32) if n not in populaires]
+                    ch_h=sorted(random.sample(ph,min(nb_anti,len(ph))))
+                    ch_b=sorted(random.sample(pb,min(5-nb_anti,len(pb))))
+                    gr=sorted(ch_h+ch_b)[:5]
+                    np2=sum(1 for n in gr if n%2==0)
+                    if np2==0 or np2==5: continue
+                    if not(jeu["somme_min"]<=sum(gr)<=jeu["somme_max"]): continue
+                    gs=sorted(gr)
+                    if any(gs[i+1]==gs[i]+1 and gs[i+2]==gs[i]+2 for i in range(len(gs)-2)): continue
+                    et=sorted(random.sample(range(1,jeu["etoiles_max"]+1),jeu["nb_etoiles"])) if jeu["etoiles_max"] else []
+                    sc=score_v5(gr,et,stats,jid)
+                    st.markdown(f"#### G{gi+1}")
+                    st.markdown(html_gr(gr,et,stats,jid),unsafe_allow_html=True)
+                    show_sc(sc)
+                    ns31=sum(1 for n in gr if n>31); npop=sum(1 for n in gr if n in populaires)
+                    st.markdown(f"<div class='success-card'>✅ {ns31}/5 numéros > 31 | {5-npop}/5 hors populaires | 💰 Moins de partage si tu gagnes</div>",unsafe_allow_html=True)
+                    st.markdown("---"); break
+        st.markdown("---")
+        st.markdown("""
+        | Scénario | Gagnants estimés | Ton gain (JP 100M€) |
+        |----------|:---:|:---:|
+        | Grille populaire (1-7-13-21-30) | ~50 | **~2M€** |
+        | Grille mixte (8-23-34-41-47) | ~10 | **~10M€** |
+        | Grille anti-pop (33-37-42-46-49) | ~2-3 | **~35-50M€** |
+        """)
+
+    # ══════════════════
+    # ESPÉRANCE
+    # ══════════════════
+    elif page=="💎 Espérance":
+        st.markdown("<div class='main-header'>💎 Espérance Mathématique</div>",unsafe_allow_html=True)
+        st.markdown("<div class='sub-header'>Quand est-ce « moins mauvais » de jouer ?</div>",unsafe_allow_html=True)
+        st.markdown("""<div class='insight-card'>
+        💡 <b>L'espérance</b> = ce que tu gagnes EN MOYENNE par grille. Toujours négative.
+        Mais <b>moins négative</b> quand le jackpot est très élevé.
+        </div>""",unsafe_allow_html=True)
+        jp=st.number_input("💰 Jackpot (M€)",17,250,50,step=1)
+        jpe=jp*1_000_000
+        if jid=="euromillions":
+            pr={"5+2":1/139838160,"5+1":1/6991908,"5+0":1/3107515,"4+2":1/621503,"4+1":1/31075,"4+0":1/13811,"3+2":1/14125,"3+1":1/706,"3+0":1/314,"2+2":1/985,"2+1":1/49,"1+2":1/188}
+            gf={"5+2":jpe,"5+1":500000,"5+0":50000,"4+2":5000,"4+1":200,"4+0":100,"3+2":60,"3+1":14,"3+0":13,"2+2":17,"2+1":8,"1+2":10}
+        else:
+            pr={"5+1":1/19068840,"5+0":1/2118760,"4+1":1/86677,"4+0":1/9631,"3+1":1/2016,"3+0":1/224,"2+1":1/144,"2+0":1/16}
+            gf={"5+1":jpe,"5+0":100000,"4+1":2000,"4+0":500,"3+1":50,"3+0":10,"2+1":6,"2+0":3}
+        esp=sum(pr[r]*gf[r] for r in pr)
+        espn=esp-jeu["prix"]
+        c1,c2,c3=st.columns(3)
+        c1.metric("Espérance brute",f"{esp:.2f}€"); c2.metric("Coût grille",f"{jeu['prix']}€")
+        c3.metric("Espérance nette",f"{espn:+.2f}€",delta_color="normal" if espn>=0 else "inverse")
+        det=[{"Rang":r,"Probabilité":f"1/{int(1/pr[r]):,}".replace(",","."),"Gain":f"{gf[r]:,.0f}€".replace(",","."),"Esp.":f"{pr[r]*gf[r]:.4f}€"} for r in pr]
+        st.dataframe(pd.DataFrame(det),hide_index=True,use_container_width=True)
+        seuil=jeu["prix"]/pr[list(pr.keys())[0]]; sm=seuil/1e6
+        if espn>=0: st.markdown(f"<div class='success-card'>✅ JP à <b>{jp}M€</b> → espérance <b>positive</b> ! Meilleur moment.</div>",unsafe_allow_html=True)
+        else:
+            pp=abs(espn)/jeu["prix"]*100
+            st.markdown(f"<div class='alert-card'>📉 Tu perds en moy <b>{abs(espn):.2f}€</b>/grille ({pp:.0f}%). Il faudrait ~<b>{sm:.0f}M€</b> de JP pour être positif.</div>",unsafe_allow_html=True)
+        jps=list(range(17,251,5))
+        esps=[]
+        for j in jps:
+            gft=gf.copy(); gft[list(gft.keys())[0]]=j*1e6
+            esps.append(sum(pr[r]*gft[r] for r in pr)-jeu["prix"])
+        fig=go.Figure()
+        fig.add_trace(go.Scatter(x=jps,y=esps,mode="lines+markers",line=dict(color="#3b82f6",width=2)))
+        fig.add_hline(y=0,line_dash="dash",line_color="#22c55e",annotation_text="Seuil rentabilité")
+        fig.add_vline(x=jp,line_dash="dash",line_color="#f59e0b",annotation_text=f"Actuel: {jp}M€")
+        fig.update_layout(height=400,title="Espérance vs Jackpot",xaxis_title="JP (M€)",yaxis_title="Espérance (€)")
+        st.plotly_chart(fig,use_container_width=True)
+
+    # ══════════════════
+    # OPTIMISEUR
+    # ══════════════════
+    elif page=="📐 Optimiseur":
+        st.markdown("<div class='main-header'>📐 Optimiseur Portefeuille</div>",unsafe_allow_html=True)
+        bo=st.number_input("💶 Budget (€)",min_value=jeu["prix"]*2,max_value=100.0,value=12.50,step=jeu["prix"])
+        ngo=int(bo/jeu["prix"]); st.info(f"**{ngo} grilles** pour {bo}€")
+        obj=st.radio("🎯 Objectif",["🔀 Couverture max","🎯 Score max","🚫 Anti-popularité","⚖️ Équilibré"])
+        if st.button("📐 OPTIMISER",type="primary",use_container_width=True):
+            gro=[]; nu=Counter(); populaires={1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,20,25,30,31}
+            with st.spinner("⏳"):
+                for gi in range(ngo):
+                    best=None; bs=-1
+                    for _ in range(200):
+                        r=gen_grille(jid,stats,"optimal",True,True,True,True); gr=r["grille"]
+                        if obj.startswith("🚫"):
+                            npop=sum(1 for n in gr if n in populaires); sc=r["score"]["total"]+(5-npop)*20
+                        elif obj.startswith("🔀"):
+                            nn=sum(1 for n in gr if nu[n]==0); sc=r["score"]["total"]+nn*15
+                        elif obj.startswith("🎯"): sc=r["score"]["total"]
+                        else:
+                            nn=sum(1 for n in gr if nu[n]==0); npop=sum(1 for n in gr if n in populaires)
+                            sc=r["score"]["total"]+nn*10+(5-npop)*5
+                        if sc>bs: bs=sc; best=r
+                    gro.append(best)
+                    for n in best["grille"]: nu[n]+=1
+            tous=set()
+            for r in gro: tous|=set(r["grille"])
+            c1,c2,c3=st.columns(3)
+            c1.metric("Grilles",ngo); c2.metric("Couverture",f"{len(tous)/jeu['boules_max']*100:.0f}%")
+            c3.metric("Score moy",f"{np.mean([r['score']['total'] for r in gro]):.0f}/100")
+            for i,r in enumerate(gro):
+                st.markdown(f"#### G{i+1}")
+                st.markdown(html_gr(r["grille"],r["etoiles"],stats,jid),unsafe_allow_html=True)
+                show_sc(r["score"]); st.markdown("---")
+            st.subheader("📱 Buraliste")
+            for i,r in enumerate(gro):
+                gs=" — ".join(str(n) for n in r["grille"])
+                es=f" | ⭐{' — '.join(str(e) for e in r['etoiles'])}" if r["etoiles"] else ""
+                st.markdown(f"<div class='buraliste-card'>G{i+1} : {gs}{es}</div>",unsafe_allow_html=True)
+            exp=f"Smart-Loto — {datetime.now().strftime('%d/%m/%Y')}\nBudget: {bo}€ — {ngo} grilles\n{'='*40}\n\n"
+            for i,r in enumerate(gro):
+                gs=" - ".join(str(n) for n in r["grille"])
+                es=f" | E: {' - '.join(str(e) for e in r['etoiles'])}" if r["etoiles"] else ""
+                exp+=f"G{i+1}: {gs}{es} (S:{r['score']['total']})\n"
+            st.download_button("📥 Télécharger",exp,f"portefeuille-{datetime.now().strftime('%Y%m%d')}.txt")
+
+    # ══════════════════
+    # HALL OF FAME
+    # ══════════════════
+    elif page=="🏆 Hall of Fame":
+        st.markdown("<div class='main-header'>🏆 Hall of Fame</div>",unsafe_allow_html=True)
         if st.session_state.gg:
-            sg = sorted(st.session_state.gg, key=lambda x:x["s"], reverse=True)
-            st.metric("Total grilles", len(sg))
-            st.metric("Meilleur score", f"{sg[0]['s']}/100")
-            for i, g in enumerate(sg[:20]):
-                md = "🥇" if i==0 else ("🥈" if i==1 else ("🥉" if i==2 else f"#{i+1}"))
-                gs = " — ".join(str(n) for n in g["g"])
-                es = f" | ⭐{' — '.join(str(e) for e in g['e'])}" if g["e"] else ""
+            sg=sorted(st.session_state.gg,key=lambda x:x["s"],reverse=True)
+            st.metric("Total",len(sg)); st.metric("Top",f"{sg[0]['s']}/100")
+            for i,g in enumerate(sg[:20]):
+                md="🥇" if i==0 else ("🥈" if i==1 else ("🥉" if i==2 else f"#{i+1}"))
+                gs=" — ".join(str(n) for n in g["g"])
+                es=f" | ⭐{' — '.join(str(e) for e in g['e'])}" if g["e"] else ""
                 st.markdown(f"{md} **{g['s']}/100** — `{gs}{es}` — {g['m']} — {g['t']}")
-            if st.button("🗑️ Réinitialiser"): st.session_state.gg=[]; st.rerun()
-        else: st.info("Génère des grilles dans le 🎯 Générateur Pro !")
+            if st.button("🗑️ Reset"): st.session_state.gg=[]; st.rerun()
+        else: st.info("Génère des grilles !")
 
-    # ══════════════════════════════
-    # 🔍 DEBUG
-    # ══════════════════════════════
-    elif page == "🔍 Debug":
-        st.markdown("<div class='main-header'>🔍 Debug CSV</div>", unsafe_allow_html=True)
+    # ══════════════════
+    # DEBUG
+    # ══════════════════
+    elif page=="🔍 Debug":
+        st.markdown("<div class='main-header'>🔍 Debug</div>",unsafe_allow_html=True)
         if dbg:
-            if dbg.get("succes"): st.success(f"✅ {dbg.get('nb_tirages','?')} tirages chargés")
-            else: st.error(f"❌ {dbg.get('erreur','Erreur inconnue')}")
-            if "colonnes" in dbg:
-                st.subheader("Colonnes détectées")
-                for i, c in enumerate(dbg["colonnes"][:15]): st.markdown(f"`{i}` → **{c}**")
-            if "mapping" in dbg:
-                m = dbg["mapping"]
-                st.success(f"📅 Date: `{m['date']}` | 🎱 Boules: `{m['boules']}` | ⭐ Étoiles: `{m['etoiles']}`")
-        else: st.info("📤 Importe un CSV pour voir le debug")
-        st.subheader("Données chargées")
-        st.dataframe(df.head(10), use_container_width=True)
+            if dbg.get("ok"): st.success(f"✅ {dbg.get('n','?')} tirages")
+            else: st.error(f"❌ {dbg.get('err','?')}")
+            if "cols" in dbg:
+                for i,c in enumerate(dbg["cols"][:15]): st.markdown(f"`{i}` → **{c}**")
+            if "map" in dbg:
+                m=dbg["map"]; st.success(f"📅 {m['d']} | 🎱 {m['b']} | ⭐ {m['e']}")
+        st.dataframe(df.head(10),use_container_width=True)
 
-    # ══════════════════════════════
-    # ℹ️ INFO
-    # ══════════════════════════════
-    elif page == "ℹ️ Info":
-        st.markdown("<div class='main-header'>ℹ️ Smart-Loto V5.0</div>", unsafe_allow_html=True)
+    # ══════════════════
+    # INFO
+    # ══════════════════
+    elif page=="ℹ️ Info":
+        st.markdown("<div class='main-header'>ℹ️ V5.1</div>",unsafe_allow_html=True)
         st.markdown(f"""
-## 17 pages • 10 modes • 10 critères
+## 20 pages • 10 modes • 10 critères
 
 | Module | Description |
 |---|---|
-| 🏠 Dashboard | Vue d'ensemble + recommandation auto |
-| 🎯 Générateur Pro | 10 modes, 6 filtres, score 10 critères |
+| 🏠 Dashboard | Vue d'ensemble + auto-suggestion |
+| 🎯 Générateur | 10 modes, 6 filtres, 10 critères |
 | 📊 Stats | Heatmap + tableau complet |
-| 🔮 Suggestion | L'outil choisit la meilleure stratégie |
+| 🔮 Suggestion | L'outil choisit la stratégie |
 | 📆 Saisonnier | Analyse par mois |
-| 📈 Tendance | Moving average par numéro |
-| ⏳ Retard Prédit | Quand va-t-il sortir ? |
-| 💰 Budget | Planificateur de grilles selon budget |
-| 📱 Checker | Vérifie tes grilles vs résultat du soir |
-| 🎰 Monte Carlo | Simulation de centaines de sessions |
+| 📈 Tendance | Moving average |
+| ⏳ Retard | Quand va-t-il sortir ? |
+| 💰 Budget | Planificateur de grilles |
+| 📱 Checker | Vérifie tes grilles vs résultat |
+| 🎰 Monte Carlo | Simulation de sessions |
 | 🔗 Couverture | Heatmap des numéros couverts |
-| 🆚 Comparateur | Compare 7 stratégies en 1 clic |
-| 🧪 Backtest | Teste une stratégie sur l'historique |
-| 🧮 Réducteur | Système réducteur de couverture |
-| 🏆 Hall of Fame | Classement de tes meilleures grilles |
-| 🔍 Debug | Diagnostic du CSV |
+| 🆚 Comparateur | Compare 7 stratégies |
+| 🧪 Backtest | Teste sur l'historique |
+| 🧮 Réducteur | Système de couverture |
+| 🚫 **Anti-Pop** | Maximise les gains potentiels |
+| 💎 **Espérance** | Quand jouer ? |
+| 📐 **Optimiseur** | Portefeuille de grilles |
+| 🏆 Hall of Fame | Tes meilleures grilles |
 
-**Données :** {bdg}
-**Tirages :** {stats['nb_tirages']}
+**Données :** {bdg} | **Tirages :** {stats['nb_tirages']}
 
-⚠️ Aucune garantie de gain — Joueurs Info Service : 09 74 75 13 13
+⚠️ Aucune garantie — 🛡️ 09 74 75 13 13
         """)
 
-    # FOOTER
-    st.markdown(
-        "<div class='footer-disclaimer'>"
-        "⚠️ Outil d'analyse statistique — Aucune garantie de gain — "
-        "Chaque tirage est indépendant<br>"
-        "🛡️ <a href='https://www.joueurs-info-service.fr/'>Joueurs Info Service</a> : 09 74 75 13 13"
-        "</div>", unsafe_allow_html=True)
+    st.markdown("<div class='footer-disclaimer'>⚠️ Outil d'analyse — Aucune garantie de gain — Chaque tirage est indépendant<br>🛡️ <a href='https://www.joueurs-info-service.fr/'>Joueurs Info Service</a> : 09 74 75 13 13</div>",unsafe_allow_html=True)
 
-if __name__ == "__main__":
+if __name__=="__main__":
     main()
