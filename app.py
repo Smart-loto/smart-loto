@@ -696,14 +696,46 @@ def main():
         st.plotly_chart(fh, use_container_width=True)
 
         st.subheader("📋 Tableau complet")
-               tri = st.selectbox("Trier par", ["Chaleur","Écart","Proba","F20","Retard","% Record"])
+              elif page == "📊 Stats":
+        st.markdown("<div class='main-header'>📊 Statistiques</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='sub-header'>{bdg} — {stats['nb_tirages']} tirages</div>", unsafe_allow_html=True)
+
+        st.subheader("🌡️ Carte de Chaleur")
+        nc=10; nr=(jeu["boules_max"]+nc-1)//nc; zd=[]; td=[]
+        for row in range(nr):
+            zr=[]; tr=[]
+            for col in range(nc):
+                n=row*nc+col+1
+                if n<=jeu["boules_max"]:
+                    s=stats["boules"][n]
+                    zr.append(s["chaleur"])
+                    tr.append(f"N°{n}<br>🌡️{s['chaleur']}<br>P:{s['proba']}%<br>Éc:{s['ecart']}<br>{s['tend']}")
+                else: zr.append(None); tr.append("")
+            zd.append(zr); td.append(tr)
+        fh=go.Figure(data=go.Heatmap(z=zd,text=td,hoverinfo="text",colorscale=[[0,"#1e3a5f"],[.5,"#f59e0b"],[1,"#ef4444"]],showscale=True))
+        for row in range(nr):
+            for col in range(nc):
+                n=row*nc+col+1
+                if n<=jeu["boules_max"]: fh.add_annotation(x=col,y=row,text=str(n),showarrow=False,font=dict(color="white",size=14))
+        fh.update_layout(height=350,margin=dict(l=20,r=20,t=20,b=20),xaxis=dict(showticklabels=False),yaxis=dict(showticklabels=False))
+        st.plotly_chart(fh, use_container_width=True)
+
+        st.subheader("📋 Tableau complet")
+        tri = st.selectbox("Trier par", ["Chaleur","Écart","Proba","F20","Retard","% Record"])
         cm = {"Chaleur":"🌡️","Écart":"Éc.","Proba":"P%","F20":"F20","Retard":"⏳","% Record":"%Rec"}
-        dfc = pd.DataFrame([{"N°":n,"🌡️":stats["boules"][n]["chaleur"],"Éc.":stats["boules"][n]["ecart"],
-            "Moy":stats["boules"][n]["ecart_moy"],"Max":stats["boules"][n]["ecart_max"],
-            "P%":stats["boules"][n]["proba"],"📈":stats["boules"][n]["tend"],
-            "F20":stats["boules"][n]["f20"],"F12m":stats["boules"][n]["f12m"],
-            "⏳":stats["boules"][n]["retard"],"%Rec":stats["boules"][n]["ratio_rec"]
-            } for n in range(1, jeu["boules_max"]+1)])
+        dfc = pd.DataFrame([{
+            "N°":n,
+            "🌡️":stats["boules"][n]["chaleur"],
+            "Éc.":stats["boules"][n]["ecart"],
+            "Moy":stats["boules"][n]["ecart_moy"],
+            "Max":stats["boules"][n]["ecart_max"],
+            "P%":stats["boules"][n]["proba"],
+            "📈":stats["boules"][n]["tend"],
+            "F20":stats["boules"][n]["f20"],
+            "F12m":stats["boules"][n]["f12m"],
+            "⏳":stats["boules"][n]["retard"],
+            "%Rec":stats["boules"][n]["ratio_rec"]
+        } for n in range(1, jeu["boules_max"]+1)])
         col_tri = cm.get(tri, "🌡️")
         st.dataframe(dfc.sort_values(col_tri, ascending=(tri in ["Écart","Retard"])),
             hide_index=True, use_container_width=True, height=500)
