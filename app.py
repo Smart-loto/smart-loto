@@ -78,24 +78,24 @@ JEUX = {
 }
 
 GLOSSAIRE = {
-    "Chaleur (🌡️)": "Score pondéré évaluant la récurrence à court terme d'un numéro. Un indicateur élevé reflète de nombreuses sorties sur les tirages récents.",
+    "Chaleur (🌡️)": "Score pondéré évaluant la récurrence à court terme d'un numéro.",
     "Écart (Éc.)": "Nombre de tirages consécutifs s'étant écoulés depuis la dernière apparition du numéro.",
-    "Écart moyen (Moy)": "Intervalle moyen théorique séparant deux apparitions successives d'un numéro sur l'ensemble de l'historique.",
-    "Écart max (Max)": "La plus longue période d'absence enregistrée pour un numéro donné dans l'historique de l'application.",
-    "F20": "Fréquence d'apparition mesurée strictement sur la fenêtre des 20 derniers tirages.",
+    "Écart moyen (Moy)": "Intervalle moyen théorique séparant deux apparitions successives d'un numéro.",
+    "Écart max (Max)": "La plus longue période d'absence enregistrée pour un numéro donné.",
+    "F20": "Fréquence d'apparition mesurée sur la fenêtre des 20 derniers tirages.",
     "F12m": "Nombre total de sorties d'un numéro sur la période glissante des 12 derniers mois.",
     "F3m": "Nombre total de sorties d'un numéro sur la période glissante des 3 derniers mois.",
-    "Probabilité (P%)": "Indice d'écart standardisé (Z-Score) converti en pourcentage pour évaluer si l'absence d'un numéro approche statistiquement d'une zone de correction moyenne.",
-    "Tendance (📈)": "Indicateur de dynamique d'un numéro. Compare la fréquence du dernier trimestre à celle de l'année précédente.",
+    "Probabilité (P%)": "Indice d'écart standardisé (Z-Score) converti en pourcentage.",
+    "Tendance (📈)": "Indicateur de dynamique d'un numéro (Trimestre vs Année).",
     "Retard (⏳)": "Différence calculée entre l'écart moyen historique d'un numéro et son écart actuel.",
     "Parité": "Distribution relative entre les numéros pairs et impairs d'une grille.",
     "Somme": "Sommation mathématique des 5 numéros de la grille.",
     "Dizaines": "Répartition spatiale des numéros par blocs de dizaines (1-10, 11-20...).",
-    "Terminaisons": "Analyse du dernier chiffre des numéros composants une grille pour éviter les redondances visuelles.",
-    "Anti-popularité": "Méthode consistant à exclure les numéros fréquemment choisis par les joueurs afin de limiter le partage des gains.",
-    "Système réducteur": "Algorithme combinatoire optimisant la sélection de plusieurs numéros pour couvrir des garanties de gains définies à moindre coût.",
-    "Backtest": "Simulation historique évaluant rétrospectivement le rendement d'une méthode de sélection sur un nombre défini de tirages passés.",
-    "Espérance": "Calcul du rendement moyen théorique espéré pour chaque grille jouée. Au loto, l'espérance est structurellement négative."
+    "Terminaisons": "Analyse du dernier chiffre des numéros pour éviter les redondances.",
+    "Anti-popularité": "Méthode excluant les numéros joués fréquemment (comme les dates de naissance de 1 à 31).",
+    "Système réducteur": "Algorithme combinatoire optimisant la sélection pour couvrir des garanties de gains.",
+    "Backtest": "Simulation historique évaluant rétrospectivement le rendement d'une méthode.",
+    "Espérance": "Calcul du rendement moyen théorique espéré pour chaque grille jouée."
 }
 
 PROFILS = {
@@ -773,7 +773,18 @@ def main():
         with c1:
             nbg = st.selectbox("Nombre de grilles souhaité", [1, 3, 5, 10], index=1)
             fi = st.text_input("🔒 Inclure des numéros fétiches (max 3, séparés par des virgules)")
-            forces = [int(n.strip()) for n in fi.split(",") if n.strip().isdigit() and 1 <= int(n.strip()) <= jeu["boules_max"]][:3] if fi else []
+            
+            # Traitement sécurisé multi-lignes de la saisie des numéros forcés
+            forces = []
+            if fi:
+                for n in fi.split(","):
+                    n_clean = n.strip()
+                    if n_clean.isdigit():
+                        val = int(n_clean)
+                        if 1 <= val <= jeu["boules_max"]:
+                            forces.append(val)
+                forces = forces[:3]
+                
         with c2:
             ee = st.slider("⭐ Écart requis entre les étoiles", 0, 8, 2) if jeu["nb_etoiles"] else 0
             
@@ -812,7 +823,18 @@ def main():
         with c2:
             st.markdown("### 🔧 Paramètres Physiques")
             fi = st.text_input("Numéros requis (max 3)")
-            forces = [int(n.strip()) for n in fi.split(",") if n.strip().isdigit() and 1 <= int(n.strip()) <= jeu["boules_max"]][:3] if fi else []
+            
+            # Traitement sécurisé multi-lignes de la saisie des numéros forcés
+            forces = []
+            if fi:
+                for n in fi.split(","):
+                    n_clean = n.strip()
+                    if n_clean.isdigit():
+                        val = int(n_clean)
+                        if 1 <= val <= jeu["boules_max"]:
+                            forces.append(val)
+                forces = forces[:3]
+                
             plafond = st.selectbox("Limitateur de plafond", ["aucun", "moins_40", "force_40"])
             ee = st.slider("Écart min étoiles", 0, 8, 2) if jeu["nb_etoiles"] else 0
             nbg = st.selectbox("Nombre de grilles", [1, 3, 5, 10], index=1)
@@ -948,4 +970,46 @@ def main():
         garantie = st.selectbox("Niveau de garantie théorique", [2, 3, 4])
         
         if ni:
-            nums = sorted(set(int(n.strip()) for n in ni.split(",") if n.strip().isdigit()
+            # Traitement sécurisé multi-lignes de la saisie des numéros utilisateur
+            nums = []
+            for n in ni.split(","):
+                n_clean = n.strip()
+                if n_clean.isdigit():
+                    val = int(n_clean)
+                    if 1 <= val <= jeu["boules_max"]:
+                        nums.append(val)
+            nums = sorted(list(set(nums)))
+            
+            if len(nums) >= 6:
+                st.success(f"Numéros sélectionnés : {nums}")
+                if st.button("🧮 OPTIMISER LES GRILLES", type="primary", use_container_width=True):
+                    grilles = reducteur_mathematique(nums, garantie)
+                    st.write(f"Nombre de grilles générées : **{len(grilles)}**")
+                    for i, g in enumerate(grilles):
+                        st.markdown(f"<div class='grille-container'><b>G{i+1} :</b> &nbsp;" + " ".join(f"<span class='boule'>{b}</span>" for b in g) + "</div>", unsafe_allow_html=True)
+            else:
+                st.warning("Veuillez sélectionner au moins 6 numéros différents.")
+
+    # 10. PAGE MES GRILLES
+    elif page == "🏆 Mes grilles":
+        st.markdown("<div class='main-header'>🏆 Mes Grilles Générées</div>", unsafe_allow_html=True)
+        if st.session_state.gg:
+            for g in st.session_state.gg:
+                st.write(f"🔹 Grille : `{g['g']}` — Étoiles : `{g['e']}` (Score : **{g['s']}/100** | {g['m']})")
+            if st.button("🗑️ Réinitialiser la session"):
+                st.session_state.gg = []
+                st.rerun()
+        else:
+            st.info("Aucune grille générée pour le moment lors de cette session.")
+
+    # 11. PAGE DEBUG
+    elif page == "🔍 Debug":
+        st.markdown("<div class='main-header'>🔍 Diagnostic Fichier</div>", unsafe_allow_html=True)
+        st.write("Aperçu brut de la matrice de traitement active :")
+        st.dataframe(df.head(10), use_container_width=True)
+
+    # Note réglementaire obligatoire
+    st.markdown("<div class='footer-disclaimer'>⚠️ Outil de traitement d'informations statistiques de jeu — Aucune garantie de gains — Le hasard conserve son indépendance lors de chaque tirage.<br>🛡️ <a href='https://www.joueurs-info-service.fr/'>Joueurs Info Service</a> : 09 74 75 13 13</div>", unsafe_allow_html=True)
+
+if __name__ == "__main__":
+    main()
