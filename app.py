@@ -85,14 +85,14 @@ GLOSSAIRE = {
     "F20": "Fréquence d'apparition mesurée strictement sur la fenêtre des 20 derniers tirages.",
     "F12m": "Nombre total de sorties d'un numéro sur la période glissante des 12 derniers mois.",
     "F3m": "Nombre total de sorties d'un numéro sur la période glissante des 3 derniers mois.",
-    "Probabilité (P%)": "Indice d'écart standardisé (Z-Score) converti en pourcentage pour évaluer si l'absence d'un numéro approche statistiquement d'une zone de correction moyenne. Chaque tirage reste indépendant.",
-    "Tendance (📈)": "Indicateur de dynamique d'un numéro. Compare la fréquence du dernier trimestre à celle de l'année précédente pour dégager une tendance.",
+    "Probabilité (P%)": "Indice d'écart standardisé (Z-Score) converti en pourcentage pour évaluer si l'absence d'un numéro approche statistiquement d'une zone de correction moyenne.",
+    "Tendance (📈)": "Indicateur de dynamique d'un numéro. Compare la fréquence du dernier trimestre à celle de l'année précédente.",
     "Retard (⏳)": "Différence calculée entre l'écart moyen historique d'un numéro et son écart actuel.",
     "Parité": "Distribution relative entre les numéros pairs et impairs d'une grille.",
-    "Somme": "Sommation mathématique des 5 numéros de la grille. Les tirages s'équilibrent généralement dans des plages centrales.",
+    "Somme": "Sommation mathématique des 5 numéros de la grille.",
     "Dizaines": "Répartition spatiale des numéros par blocs de dizaines (1-10, 11-20...).",
     "Terminaisons": "Analyse du dernier chiffre des numéros composants une grille pour éviter les redondances visuelles.",
-    "Anti-popularité": "Méthode mathématique consistant à exclure les numéros fréquemment choisis par les joueurs (comme les dates de naissance de 1 à 31) afin de limiter le partage des gains en cas de victoire.",
+    "Anti-popularité": "Méthode consistant à exclure les numéros fréquemment choisis par les joueurs afin de limiter le partage des gains.",
     "Système réducteur": "Algorithme combinatoire optimisant la sélection de plusieurs numéros pour couvrir des garanties de gains définies à moindre coût.",
     "Backtest": "Simulation historique évaluant rétrospectivement le rendement d'une méthode de sélection sur un nombre défini de tirages passés.",
     "Espérance": "Calcul du rendement moyen théorique espéré pour chaque grille jouée. Au loto, l'espérance est structurellement négative."
@@ -120,7 +120,7 @@ PROFILS = {
         "plafond": "aucun", "pw_ch": 40, "pw_ec": 40, "pw_pr": 80
     },
     "🚫 Anti-Populaire": {
-        "desc": "Filtre limitant les numéros bas (dates de naissance) pour optimiser les gains en cas de victoire partagée.",
+        "desc": "Filtre limitant les numéros bas pour optimiser les gains en cas de victoire partagée.",
         "mode": "optimal", "fp": True, "fs": True, "fd": True, "fa": True, "ft": True, "fb": True,
         "plafond": "force_40", "pw_ch": 50, "pw_ec": 50, "pw_pr": 50
     },
@@ -339,7 +339,7 @@ def calc_stats_vectorized(df_json, jid, jf=None):
         pb = min(99.0, max(1.0, 50.0 + zz * 15.0))
         td = "↗️" if f3m > (f12m - f3m) * 1.3 else ("↘️" if f3m < (f12m - f3m) * 0.7 else "→")
         
-        # Détermination de la date de la dernière sortie
+        # Dernière sortie
         dn = "—"
         if freq_tot > 0:
             dn = str(df.iloc[sorties_indices[0]]["date"])
@@ -535,7 +535,7 @@ def gen_grille_constructive(jid, st_, mode="aleatoire", fp=False, fs=False, fd=F
         if valide:
             grille.add(num_candidat)
             
-    # Complétion sécurisée si contraintes trop fortes
+    # Complétion de sécurité si contraintes trop fortes
     while len(grille) < 5:
         restants = [n for n in candidats if n not in grille]
         if not restants:
@@ -729,9 +729,9 @@ def main():
     st.sidebar.caption("⚠️ Aucune garantie mathématique de gain")
     st.sidebar.caption("🛡️ Joueurs Info Service : 09 74 75 13 13")
     
-    # Appel de la fonction de calcul vectorisée V6
+    # Appel du moteur vectorisé V6
     stats = calc_stats_vectorized(df.to_json(), jid)
-    bdg = "🟢 Données réelles synchronisées" if reel else "🟡 Données simulées dynamiques"
+    bdg = "🟢 Données réelles" if reel else "🟡 Données simulées"
 
     # 1. PAGE DASHBOARD
     if page == "🏠 Dashboard":
@@ -842,7 +842,7 @@ def main():
     elif page == "📊 Statistiques":
         st.markdown("<div class='main-header'>📊 Analyse Graphique</div>", unsafe_allow_html=True)
         
-        # Carte de chaleur interactive
+        # Heatmap
         nc = 10
         nr = (jeu["boules_max"] + nc - 1) // nc
         zd, td = [], []
@@ -875,7 +875,7 @@ def main():
         fh.update_layout(height=350, margin=dict(l=10, r=10, t=10, b=10), xaxis=dict(showticklabels=False), yaxis=dict(showticklabels=False))
         st.plotly_chart(fh, use_container_width=True)
         
-        # Tableau récapitulatif
+        # Tableau global
         st.subheader("📋 Matrice globale des numéros")
         dfc = pd.DataFrame(list(stats["boules"].values()))
         st.dataframe(dfc[["numero", "ecart", "ecart_moy", "ecart_max", "chaleur", "proba", "tend", "retard"]].rename(
@@ -908,7 +908,7 @@ def main():
         st.markdown("<div class='main-header'>💎 Évaluation de Rentabilité</div>", unsafe_allow_html=True)
         jp = st.number_input("Jackpot de la cagnotte (en millions d'euros)", 17, 250, 50, step=5)
         
-        # Loi d'espérance théorique simplifiée
+        # Calcul d'espérance théorique
         prix = jeu["prix"]
         pr_gagner = 1 / 139838160 if jid == "euromillions" else 1 / 19068840
         esp = (jp * 1_000_000) * pr_gagner
@@ -916,4 +916,36 @@ def main():
         
         st.metric("Coût d'investissement", f"{prix} €")
         st.metric("Rendement moyen espéré", f"{esp:.4f} €")
-        st.metric("Espérance nette par grille", f
+        st.metric("Espérance nette par grille", f"{bilan:.4f} €", delta=f"{bilan:.4f} €")
+        
+        if bilan > 0:
+            st.success("✅ L'espérance mathématique de la cagnotte franchit le seuil de neutralité.")
+        else:
+            st.warning("📉 L'espérance mathématique nette reste négative. Chaque grille jouée conserve statistiquement une espérance de perte.")
+
+    # 7. PAGE GLOSSAIRE
+    elif page == "📖 Glossaire":
+        st.markdown("<div class='main-header'>📖 Glossaire</div>", unsafe_allow_html=True)
+        for terme, definition in GLOSSAIRE.items():
+            st.markdown(f"<div class='glossary-term'><b>{terme}</b><br>{definition}</div>", unsafe_allow_html=True)
+
+    # 8. PAGE BACKTEST
+    elif page == "🧪 Backtest":
+        st.markdown("<div class='main-header'>🧪 Simulation Rétrospective</div>", unsafe_allow_html=True)
+        mode = st.selectbox("Stratégie de sélection", ["aleatoire", "chaud", "retard"])
+        nt = st.selectbox("Nombre de tirages tests", [20, 50, 100, 200], index=1)
+        
+        if st.button("🚀 LANCER LA SIMULATION", type="primary", use_container_width=True):
+            rb = backtest(df, jid, stats, mode, nt)
+            st.metric("Total des mises théoriques", f"{rb['mise']} €")
+            st.metric("Total des gains retournés", f"{rb['gains']} €")
+            st.metric("Solde financier net", f"{rb['bilan']} €")
+
+    # 9. PAGE RÉDUCTEUR
+    elif page == "🧮 Réducteur":
+        st.markdown("<div class='main-header'>🧮 Réducteur Combinatoire</div>", unsafe_allow_html=True)
+        ni = st.text_input("Entrez votre sélection de 6 à 15 numéros (séparés par des virgules)", "5, 12, 19, 24, 33, 41, 45")
+        garantie = st.selectbox("Niveau de garantie théorique", [2, 3, 4])
+        
+        if ni:
+            nums = sorted(set(int(n.strip()) for n in ni.split(",") if n.strip().isdigit()
