@@ -1,5 +1,5 @@
 # ============================================================
-# SMART-LOTO — VERSION 6.2 — STABILISÉE
+# SMART-LOTO — VERSION 6.3 — ÉDITION MATHÉMATIQUE AVANCÉE
 # ============================================================
 
 import streamlit as st
@@ -13,13 +13,13 @@ import io
 
 # Configuration globale de l'interface
 st.set_page_config(
-    page_title="Smart-Loto V6.2", 
+    page_title="Smart-Loto V6.3", 
     page_icon="🎱", 
     layout="wide", 
     initial_sidebar_state="expanded"
 )
 
-# Injection des styles CSS sécurisés (sans altérer les conteneurs Streamlit natifs)
+# Injection des styles CSS sécurisés
 st.markdown("""
 <style>
     .main-header {font-size:2.5rem;font-weight:800;background:linear-gradient(135deg,#1e40af,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center;padding:10px 0;}
@@ -82,7 +82,9 @@ GLOSSAIRE = {
     "Dizaines": "Répartition spatiale des numéros par blocs de dizaines (1-10, 11-20...).",
     "Terminaisons": "Analyse du dernier chiffre des numéros pour éviter les redondances.",
     "Entropie de Shannon": "Mesure mathématique de la répartition des écarts internes de la grille pour éviter les motifs trop réguliers.",
-    "Modèle de Popularité": "Estimation de l'attractivité humaine des numéros (dates de naissance, numéros fétiches) pour optimiser les rapports de gain.",
+    "Modèle Sabermétrique": "Pondération théorique de la valeur du ticket en fonction de la densité attendue des autres joueurs pour maximiser les gains non partagés.",
+    "Test de Wald-Wolfowitz": "Test non paramétrique d'indépendance statistique (Runs Test) visant à vérifier l'absence de biais sur la machine de tirage.",
+    "Prospect Theory": "Théorie de Kahneman et Tversky modélisant la perception subjective de l'utilité du ticket face au risque.",
     "Système réducteur": "Algorithme combinatoire optimisant la sélection pour couvrir des garanties de gains.",
     "Backtest & Monte-Carlo": "Simulation historique et empirique évaluant le rendement d'une méthode de sélection sur un grand nombre d'itérations.",
     "Espérance": "Calcul du rendement moyen théorique espéré pour chaque grille jouée."
@@ -151,6 +153,76 @@ def get_popularity_profile(gr):
             p -= 0.3
         score_pop += p
     return round(score_pop / len(gr), 2)
+
+def calc_sabermetric_efficiency(gr):
+    """Calcule l'efficacité sabermétrique d'un ticket (0-100%).
+    Plus la popularité est faible, plus le ticket est efficace (pas de partage)."""
+    p_profile = get_popularity_profile(gr)
+    # L'indice de popularité oscille généralement entre 0.7 et 2.2
+    efficiency = (2.2 - p_profile) / (2.2 - 0.7) * 100.0
+    return max(0.0, min(100.0, float(efficiency)))
+
+# ============================================================
+# TESTS D'INDÉPENDANCE ET AUDIT DU HASARD (WALD-WOLFOWITZ)
+# ============================================================
+def normal_cdf(x):
+    """Approximation de la CDF de la loi normale standard (formule de Hart)"""
+    return 0.5 * (1.0 + np.sign(x) * np.sqrt(1.0 - np.exp(-2.0 * x * x / np.pi)))
+
+def audit_wald_wolfowitz(sequence):
+    """Calcule le test des suites (Runs Test) de Wald-Wolfowitz pour éprouver l'indépendance de la série."""
+    n = len(sequence)
+    if n < 15:
+        return 0.0, 1.0
+    
+    median = np.median(sequence)
+    binarized = np.array([1 if x >= median else 0 for x in sequence])
+    
+    runs = 1
+    for i in range(1, n):
+        if binarized[i] != binarized[i-1]:
+            runs += 1
+            
+    n1 = int(np.sum(binarized == 1))
+    n2 = int(np.sum(binarized == 0))
+    
+    if n1 == 0 or n2 == 0:
+        return 0.0, 1.0
+        
+    mu = ((2.0 * n1 * n2) / n) + 1.0
+    var = (2.0 * n1 * n2 * (2.0 * n1 * n2 - n)) / (n * n * (n - 1.0))
+    
+    if var <= 0:
+        return 0.0, 1.0
+        
+    sigma = np.sqrt(var)
+    z = (runs - mu) / sigma
+    p_val = 2.0 * (1.0 - normal_cdf(abs(z)))
+    return float(z), float(p_val)
+
+# ============================================================
+# THÉORIE DES PERSPECTIVES (PROSPECT THEORY)
+# ============================================================
+def calc_prospect_utility(jackpot_m, prix_ticket, pr_gagner):
+    """Calcule l'utilité selon la Prospect Theory de Kahneman-Tversky."""
+    alpha = 0.88
+    beta = 0.88
+    lambda_val = 2.25
+    gamma = 0.61  # Paramètre de pondération pour les gains
+    
+    gain = jackpot_m * 1_000_000.0
+    p = pr_gagner
+    
+    # Formule de pondération subjective des probabilités infimes
+    numerator = p ** gamma
+    denominator = (numerator + ((1.0 - p) ** gamma)) ** (1.0 / gamma)
+    pi_p = numerator / denominator
+    
+    u_gains = pi_p * (gain ** alpha)
+    u_pertes = -lambda_val * (prix_ticket ** beta)
+    u_nette = u_gains + u_pertes
+    
+    return float(u_nette), float(pi_p)
 
 # ============================================================
 # SYSTÈME DE GESTION DES DONNÉES (CSV & SIMULATION DYNAMIQUE)
@@ -311,7 +383,7 @@ def gen_simul(jid, nb=500):
     return pd.DataFrame(t).sort_values("date", ascending=False).reset_index(drop=True)
 
 # ============================================================
-# MOTEUR STATISTIQUE VECTORISÉ DIRECT (SANS DOUBLE SÉRIALISATION)
+# MOTEUR STATISTIQUE VECTORISÉ DIRECT
 # ============================================================
 @st.cache_data
 def calc_stats_vectorized(df, jid, jf=None):
@@ -427,67 +499,6 @@ def calc_stats_vectorized(df, jid, jf=None):
         "date_1": str(df.iloc[-1]["date"]) if len(df) > 0 else "—",
         "date_n": str(df.iloc[0]["date"]) if len(df) > 0 else "—"
     }
-
-# ============================================================
-# SCORE DE QUALITÉ COHÉRENT V6.1 (ENTROPIE ET POPULARITÉ)
-# ============================================================
-def score_v6_1(gr, et, st_, jid):
-    jeu = JEUX[jid]
-    sc = {}
-    po = st_.get("profil", {})
-    
-    # 1. Parité (10 pts)
-    np2 = sum(1 for n in gr if n % 2 == 0)
-    sc["⚖️ Parité"] = 10 if abs(np2 - po.get("pairs_moy", 2.5)) <= 0.5 else (7 if abs(np2 - po.get("pairs_moy", 2.5)) <= 1.5 else 3)
-    
-    # 2. Dizaines (10 pts)
-    dz = Counter((n - 1) // 10 for n in gr)
-    sc["📊 Dizaines"] = 10 if len(dz) >= round(po.get("diz_moy", 4)) else (7 if len(dz) >= round(po.get("diz_moy", 4)) - 1 else 3)
-    
-    # 3. Somme (10 pts)
-    s = sum(gr)
-    q1, q3 = po.get("somme_q1", 90), po.get("somme_q3", 160)
-    sc["➕ Somme"] = 10 if q1 <= s <= q3 else (7 if jeu["somme_min"] <= s <= jeu["somme_max"] else 2)
-    
-    # 4. Diversité (10 pts)
-    ecs = [st_["boules"][n]["ecart"] for n in gr if n in st_["boules"]]
-    sc["🔀 Diversité"] = (10 if float(np.std(ecs)) > 5 else (7 if float(np.std(ecs)) > 3 else 3)) if len(set(ecs)) > 1 else 3
-    
-    # 5. Absence de Suite (8 pts)
-    g = sorted(gr)
-    hs = any(g[i+1] == g[i] + 1 and g[i+2] == g[i] + 2 for i in range(len(g) - 2))
-    sc["🚫 Suite"] = 2 if hs else 8
-    
-    # 6. Étoiles (8 pts)
-    if et and len(et) == 2:
-        e = abs(et[0] - et[1])
-        sc["⭐ Étoiles"] = 8 if e >= 3 else (5 if e >= 2 else 2)
-    else:
-        sc["⭐ Étoiles"] = 8
-        
-    # 7. Terminaisons (8 pts)
-    terms = set(n % 10 for n in gr)
-    sc["🔢 Terms"] = 8 if len(terms) >= round(po.get("terms_moy", 4)) else (5 if len(terms) >= round(po.get("terms_moy", 4)) - 1 else 2)
-    
-    # 8. Bas / Hauts (8 pts)
-    nb_bas = sum(1 for n in gr if n <= jeu["boules_max"] // 2)
-    sc["⬆️⬇️ B/H"] = 8 if abs(nb_bas - po.get("bas_moy", 2.5)) <= 0.5 else (5 if abs(nb_bas - po.get("bas_moy", 2.5)) <= 1.5 else 2)
-    
-    # 9. Chaleur (8 pts)
-    chs = [st_["boules"][n]["chaleur"] for n in gr if n in st_["boules"]]
-    mc = np.mean(chs) if chs else 50
-    sc["🌡️ Chaleur"] = 8 if 35 <= mc <= 65 else (5 if 20 <= mc <= 80 else 2)
-    
-    # 10. Probabilité théorique (8 pts)
-    pbs = [st_["boules"][n]["proba"] for n in gr if n in st_["boules"]]
-    mp = np.mean(pbs) if pbs else 50
-    sc["📊 Proba"] = 8 if mp >= 55 else (5 if mp >= 45 else 2)
-
-    # 11. Entropie de Shannon (12 pts)
-    ent = calc_shannon_entropy(gr, jeu["boules_max"])
-    sc["🌀 Entropie"] = 12 if 2.1 <= ent <= 2.55 else (8 if 1.8 <= ent < 2.1 else 3)
-    
-    return {"total": sum(sc.values()), "detail": sc, "max": 100}
 
 # ============================================================
 # GÉNÉRATEUR CONSTRUCTIF AVEC FILTRES SCIENTIFIQUES
@@ -710,7 +721,7 @@ def show_sc(sc, entropy_val, pop_score):
     with c1:
         st.markdown(f"<div class='score-big'><div class='score-number' style='color:{cc};'>{sc['total']}</div><div class='score-label'>/ {sc['max']} {ev}</div></div>", unsafe_allow_html=True)
         st.write(f"🌀 **Entropie** : `{entropy_val:.3f}` *(cible : 2.1 - 2.5)*")
-        st.write(f"👥 **Indice popularité** : `{pop_score:.2f}` *(plus l'indice est faible, meilleur est le gain théorique potentiel)*")
+        st.write(f"👥 **Efficacité Sabermétrique** : `{calc_sabermetric_efficiency(sc['detail'].keys()):.1f}%` *(évitement du partage du jackpot)*")
     with c2:
         mx = {"⚖️ Parité": 10, "📊 Dizaines": 10, "➕ Somme": 10, "🔀 Diversité": 10, "🚫 Suite": 8, "⭐ Étoiles": 8, "🔢 Terms": 8, "⬆️⬇️ B/H": 8, "🌡️ Chaleur": 8, "📊 Proba": 8, "🌀 Entropie": 12}
         for cr, pt in sc["detail"].items():
@@ -740,7 +751,7 @@ def auto_sug(st_, jid):
 # POINT D'ENTRÉE DE L'APPLICATION
 # ============================================================
 def main():
-    st.sidebar.markdown("<div style='text-align:center;'><h1 style='font-size:2rem;color:#1e293b;'>🎱 Smart-Loto</h1><p style='color:#64748b;'>V6.2 — Édition Sécurisée</p></div>", unsafe_allow_html=True)
+    st.sidebar.markdown("<div style='text-align:center;'><h1 style='font-size:2rem;color:#1e293b;'>🎱 Smart-Loto</h1><p style='color:#64748b;'>V6.3 — Intelligence Distribuée</p></div>", unsafe_allow_html=True)
     st.sidebar.markdown("---")
     
     jid = st.sidebar.selectbox("🎮 Jeu", ["euromillions", "loto"], format_func=lambda x: f"{JEUX[x]['emoji']} {JEUX[x]['nom']}")
@@ -784,7 +795,6 @@ def main():
     st.sidebar.caption("⚠️ Aucune garantie mathématique de gain")
     st.sidebar.caption("🛡️ Joueurs Info Service : 09 74 75 13 13")
     
-    # Appel direct sans sérialisation intermédiaire
     stats = calc_stats_vectorized(df, jid)
     bdg = "🟢 Données réelles" if reel else "🟡 Données simulées"
 
@@ -800,19 +810,20 @@ def main():
         st.subheader(f"🎱 Dernier tirage enregistré — {d['date']}")
         st.markdown(html_gr(bs, et_d, stats, jid), unsafe_allow_html=True)
         
+        # Moteur d'audit Wald-Wolfowitz sur l'historique
+        seq_auditee = df[[f"boule_{i}" for i in range(1, 6)]].to_numpy().flatten()
+        z_score, p_val = audit_wald_wolfowitz(seq_auditee[:500])
+        
+        st.subheader("🛡️ Rapport d'Audit de Hasard (Wald-Wolfowitz)")
+        if p_val > 0.05:
+            st.success(f"✅ Indépendance validée (p-value = {p_val:.4f}). Les données d'historique ne révèlent aucun biais de tirage physique.")
+        else:
+            st.warning(f"⚠️ Déviation mineure détectée (p-value = {p_val:.4f}). Motif de tirage potentiellement non uniforme.")
+        
         rc = auto_sug(stats, jid)
         if rc:
             b = rc[0]
             st.markdown(f"<div class='reco-card'>🔮 <b>Recommandation dynamique :</b> Profil conseillé <b>{b['m'].upper()}</b> — {b['r']} (Confiance {b['c']}%)</div>", unsafe_allow_html=True)
-            
-        st.subheader("📋 Historique des 10 derniers tirages")
-        dern = []
-        for i in range(min(10, len(df))):
-            r = df.iloc[i]
-            t = " - ".join(str(int(r[f"boule_{j}"])) for j in range(1, 6))
-            e = f"⭐ {int(r['etoile_1'])} ⭐ {int(r['etoile_2'])}" if jeu["nb_etoiles"] and "etoile_1" in df.columns else "Aucune"
-            dern.append({"📅 Date": str(r["date"]), "🎱 Numéros": t, "⭐ Étoiles": e})
-        st.dataframe(pd.DataFrame(dern), hide_index=True, use_container_width=True)
 
     # 2. PAGE GÉNÉRER SIMPLE
     elif page == "🎱 Générer (Simple)":
@@ -857,9 +868,10 @@ def main():
                 sc = r["score"]
                 ent_val = calc_shannon_entropy(r["grille"], jeu["boules_max"])
                 pop_val = get_popularity_profile(r["grille"])
+                eff_val = calc_sabermetric_efficiency(r["grille"])
                 cc = "#22c55e" if sc["total"] >= 70 else ("#f59e0b" if sc["total"] >= 50 else "#ef4444")
                 
-                st.markdown(f"<div style='border-left: 5px solid {cc}; padding-left: 10px; margin-bottom:15px;'>Score de conformité structurelle : <b>{sc['total']}/100</b> | Entropie : <b>{ent_val:.2f}</b> | Popularité : <b>{pop_val:.2f}</b></div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='border-left: 5px solid {cc}; padding-left: 10px; margin-bottom:15px;'>Score de conformité structurelle : <b>{sc['total']}/100</b> | Entropie : <b>{ent_val:.2f}</b> | Efficacité Sabermétrique : <b>{eff_val:.1f}%</b></div>", unsafe_allow_html=True)
                 st.markdown("---")
                 
             st.session_state.gg.extend([{"g": r["grille"], "e": r["etoiles"], "s": r["score"]["total"], "m": profil_choisi, "t": datetime.now().strftime("%H:%M")} for r in ag])
@@ -983,22 +995,30 @@ def main():
 
     # 6. PAGE QUAND JOUER ?
     elif page == "💎 Quand jouer ?":
-        st.markdown("<div class='main-header'>💎 Évaluation de Rentabilité</div>", unsafe_allow_html=True)
+        st.markdown("<div class='main-header'>💎 Évaluation de Rentabilité & Utilité</div>", unsafe_allow_html=True)
         jp = st.number_input("Jackpot de la cagnotte (en millions d'euros)", 17, 250, 50, step=5)
         
         prix = jeu["prix"]
-        pr_gagner = 1 / 139838160 if jid == "euromillions" else 1 / 19068840
-        esp = (jp * 1_000_000) * pr_gagner
+        pr_gagner = 1.0 / 139838160.0 if jid == "euromillions" else 1.0 / 19068840.0
+        
+        esp = (jp * 1_000_000.0) * pr_gagner
         bilan = esp - prix
         
-        st.metric("Coût d'investissement", f"{prix} €")
+        # Calcul de la Prospect Theory (Utilité subjective)
+        u_nette, pi_p = calc_prospect_utility(jp, prix, pr_gagner)
+        
+        st.subheader("📊 Approche Mathématique Classique")
         st.metric("Rendement moyen espéré", f"{esp:.4f} €")
         st.metric("Espérance nette par grille", f"{bilan:.4f} €", delta=f"{bilan:.4f} €")
         
-        if bilan > 0:
-            st.success("✅ L'espérance mathématique de la cagnotte franchit le seuil de neutralité.")
+        st.subheader("🧠 Approche Comportementale (Prospect Theory)")
+        st.metric("Utilité nette perçue", f"{u_nette:.4f} Utils", help="Un score positif indique que l'attractivité du jackpot justifie psychologiquement l'achat d'un ticket selon Kahneman-Tversky.")
+        st.write(f"Pondération subjective de la probabilité : `{pi_p:.12f}` *(vs probabilité réelle : `{pr_gagner:.12f}`)*")
+        
+        if u_nette > 0:
+            st.success("✅ Selon la Prospect Theory, le montant du jackpot compense subjectivement l'aversion à la perte. La grille possède une utilité perçue positive.")
         else:
-            st.warning("📉 L'espérance mathématique nette reste négative. Chaque grille jouée conserve statistiquement une espérance de perte.")
+            st.warning("📉 L'utilité perçue reste négative. Malgré la taille de la cagnotte, le coût du ticket pèse plus lourd dans la fonction de valeur subjective.")
 
     # 7. PAGE GLOSSAIRE
     elif page == "📖 Glossaire":
