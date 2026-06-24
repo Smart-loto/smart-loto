@@ -1,5 +1,5 @@
 # ============================================================
-# SMART-LOTO — VERSION 6.4 — ÉDITION SCIENCE DES DONNÉES
+# SMART-LOTO — VERSION 6.4.1 — STABLE & INTÉGRALE
 # ============================================================
 
 import streamlit as st
@@ -14,7 +14,7 @@ import math
 
 # Configuration globale de l'interface
 st.set_page_config(
-    page_title="Smart-Loto V6.4", 
+    page_title="Smart-Loto V6.4.1", 
     page_icon="🎱", 
     layout="wide", 
     initial_sidebar_state="expanded"
@@ -157,7 +157,6 @@ def get_popularity_profile(gr):
     return round(score_pop / len(gr), 2)
 
 def calc_sabermetric_efficiency_from_pop(pop_score):
-    """Calcule l'efficacité sabermétrique d'un ticket (0-100%) à partir de son score de popularité."""
     # L'indice de popularité oscille généralement entre 0.7 et 2.2
     efficiency = (2.2 - pop_score) / (2.2 - 0.7) * 100.0
     return max(0.0, min(100.0, float(efficiency)))
@@ -231,7 +230,6 @@ def poisson_cdf(k, lamb):
 
 @st.cache_data
 def calc_markov_matrix(df, jid):
-    """Calcule la matrice empirique de transition séquentielle d'ordre 1 (tirage t vers t+1)"""
     jeu = JEUX[jid]
     max_b = jeu["boules_max"]
     matrix = np.zeros((max_b, max_b))
@@ -249,7 +247,7 @@ def calc_markov_matrix(df, jid):
     return matrix
 
 # ============================================================
-# DATA LOADING
+# GESTION DES DONNÉES ET GÊNÉRATION DE SIMULATIONS
 # ============================================================
 def load_csv(up, jid):
     jeu = JEUX[jid]
@@ -387,8 +385,27 @@ def load_csv(up, jid):
     dbg["map"] = {"d": dc, "b": bc[:5], "e": ec[:2]}
     return r, dbg
 
+def gen_simul(jid, nb=500):
+    jeu = JEUX[jid]
+    t = []
+    now = datetime.now()
+    js = ["mardi", "vendredi"] if jid == "euromillions" else ["lundi", "mercredi", "samedi"]
+    for i in range(nb):
+        b = sorted(random.sample(range(1, jeu["boules_max"] + 1), 5))
+        e = sorted(random.sample(range(1, jeu["etoiles_max"] + 1), 2)) if jeu["etoiles_max"] else []
+        d = {
+            "date": (now - timedelta(days=i * 3.5)).date(),
+            "boule_1": b[0], "boule_2": b[1], "boule_3": b[2], "boule_4": b[3], "boule_5": b[4],
+            "jour": js[i % len(js)], "mois": (now - timedelta(days=i * 3.5)).month
+        }
+        if e:
+            d["etoile_1"] = e[0]
+            d["etoile_2"] = e[1]
+        t.append(d)
+    return pd.DataFrame(t).sort_values("date", ascending=False).reset_index(drop=True)
+
 # ============================================================
-# STATISTICAL ENGINE
+# MOTEUR STATISTIQUE VECTORISÉ DIRECT
 # ============================================================
 @st.cache_data
 def calc_stats_vectorized(df, jid, jf=None):
@@ -411,8 +428,6 @@ def calc_stats_vectorized(df, jid, jf=None):
     ecarts_actuels[jamais_sorti] = n_tirages
     
     stats_boules = {}
-    
-    # Paramètre de la Loi de Poisson (Espérance théorique de sorties)
     lamb_poisson = float(n_tirages * (5.0 / max_boules))
     
     for num in range(1, max_boules + 1):
@@ -442,7 +457,6 @@ def calc_stats_vectorized(df, jid, jf=None):
         if freq_tot > 0:
             dn = str(df.iloc[sorties_indices[0]]["date"])
             
-        # Évaluation de la déviation statistique par la Loi de Poisson
         p_cdf = poisson_cdf(freq_tot, lamb_poisson)
         if p_cdf > 0.975:
             stat_status = "🔥 Sur-fréquence"
@@ -576,7 +590,6 @@ def gen_grille_constructive(jid, st_, mode="aleatoire", fp=False, fs=False, fd=F
                             chasseur=0, forces=None, ee=0, plafond="aucun",
                             f_term=False, f_bh=False, pw_ch=50, pw_ec=50, pw_pr=50,
                             portfolio_counts=None):
-    """Génère une grille. Ajuste le poids des numéros selon le portefeuille pour éviter les redondances."""
     jeu = JEUX[jid]
     max_boules = jeu["boules_max"]
     fo = [f for f in (forces or []) if 1 <= f <= max_boules][:3]
@@ -601,7 +614,6 @@ def gen_grille_constructive(jid, st_, mode="aleatoire", fp=False, fs=False, fd=F
         else:
             w = 1.0
             
-        # Modèle de diversification du portefeuille : pénalise les numéros déjà choisis dans les grilles précédentes
         if portfolio_counts and n in portfolio_counts:
             w = w * (0.15 ** portfolio_counts[n])
             
@@ -830,7 +842,7 @@ def auto_sug(st_, jid):
 # POINT D'ENTRÉE DE L'APPLICATION
 # ============================================================
 def main():
-    st.sidebar.markdown("<div style='text-align:center;'><h1 style='font-size:2rem;color:#1e293b;'>🎱 Smart-Loto</h1><p style='color:#64748b;'>V6.4 — Édition Spatiale</p></div>", unsafe_allow_html=True)
+    st.sidebar.markdown("<div style='text-align:center;'><h1 style='font-size:2rem;color:#1e293b;'>🎱 Smart-Loto</h1><p style='color:#64748b;'>V6.4.1 — Édition Spatiale</p></div>", unsafe_allow_html=True)
     st.sidebar.markdown("---")
     
     jid = st.sidebar.selectbox("🎮 Jeu", ["euromillions", "loto"], format_func=lambda x: f"{JEUX[x]['emoji']} {JEUX[x]['nom']}")
