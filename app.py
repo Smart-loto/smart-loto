@@ -1,5 +1,5 @@
 # ============================================================
-# SMART-LOTO — VERSION 6.1 — OPTIMISÉE & MODULAIRE
+# SMART-LOTO — VERSION 6.2 — STABILISÉE
 # ============================================================
 
 import streamlit as st
@@ -13,13 +13,13 @@ import io
 
 # Configuration globale de l'interface
 st.set_page_config(
-    page_title="Smart-Loto V6.1", 
+    page_title="Smart-Loto V6.2", 
     page_icon="🎱", 
     layout="wide", 
     initial_sidebar_state="expanded"
 )
 
-# Injection des styles CSS personnalisés
+# Injection des styles CSS sécurisés (sans altérer les conteneurs Streamlit natifs)
 st.markdown("""
 <style>
     .main-header {font-size:2.5rem;font-weight:800;background:linear-gradient(135deg,#1e40af,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center;padding:10px 0;}
@@ -27,27 +27,16 @@ st.markdown("""
     .boule {background:linear-gradient(135deg,#1e40af,#3b82f6);color:#fff !important;border-radius:50%;width:65px;height:65px;display:inline-flex;align-items:center;justify-content:center;font-size:22px;font-weight:bold;margin:5px;box-shadow:0 4px 12px rgba(30,64,175,0.4);}
     .etoile {background:linear-gradient(135deg,#f59e0b,#fbbf24);color:#fff !important;border-radius:50%;width:65px;height:65px;display:inline-flex;align-items:center;justify-content:center;font-size:22px;font-weight:bold;margin:5px;box-shadow:0 4px 12px rgba(245,158,11,0.4);}
     .grille-container {display:flex;align-items:center;justify-content:center;padding:25px;background:linear-gradient(135deg,#f8fafc,#e2e8f0);border-radius:20px;margin:15px 0;border:2px solid #e2e8f0;color:#1e293b !important;}
-    .grille-container b,.grille-container strong{color:#1e293b !important;}
+    .grille-container b, .grille-container strong {color:#1e293b !important;}
     .footer-disclaimer {background:#fef3c7;border:1px solid #f59e0b;border-radius:12px;padding:15px;margin-top:30px;text-align:center;font-size:0.9rem;color:#92400e !important;}
-    .footer-disclaimer a{color:#b45309 !important;text-decoration:underline;}
-    .alert-card {background:linear-gradient(135deg,#fef2f2,#fee2e2);border:2px solid #ef4444;border-radius:16px;padding:20px;margin:10px 0;color:#991b1b !important;}
-    .alert-card b,.alert-card strong{color:#7f1d1d !important;}
-    .success-card {background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:2px solid #22c55e;border-radius:16px;padding:20px;margin:10px 0;color:#166534 !important;}
-    .success-card b,.success-card strong{color:#14532d !important;}
+    .footer-disclaimer a {color:#b45309 !important;text-decoration:underline;}
     .insight-card {background:linear-gradient(135deg,#eff6ff,#dbeafe);border:2px solid #3b82f6;border-radius:16px;padding:20px;margin:10px 0;color:#1e3a5f !important;}
-    .insight-card b,.insight-card strong,.insight-card span{color:#1e3a5f !important;}
     .reco-card {background:linear-gradient(135deg,#fdf4ff,#f3e8ff);border:2px solid #a855f7;border-radius:16px;padding:20px;margin:10px 0;color:#581c87 !important;}
-    .reco-card b,.reco-card strong,.reco-card span{color:#581c87 !important;}
-    .buraliste-card {text-align:center;font-size:28px;font-weight:bold;padding:15px;background:#f8fafc;border-radius:12px;margin:8px 0;color:#1e293b !important;border:1px solid #e2e8f0;}
-    .score-big{text-align:center;}
-    .score-big .score-number{font-size:3rem;font-weight:800;}
-    .score-big .score-label{color:#64748b !important;font-size:0.9rem;}
-    .preset-card {background:linear-gradient(135deg,#f8fafc,#e2e8f0);border:2px solid #cbd5e1;border-radius:16px;padding:20px;margin:10px 0;color:#1e293b !important;cursor:pointer;transition:all 0.2s;}
-    .preset-card:hover {border-color:#3b82f6;box-shadow:0 4px 12px rgba(59,130,246,0.2);}
-    .preset-card b,.preset-card strong{color:#1e293b !important;}
-    .element-container div[data-testid="stMarkdownContainer"] > div{color:#1e293b;}
+    .score-big {text-align:center;}
+    .score-big .score-number {font-size:3rem;font-weight:800;}
+    .score-big .score-label {color:#64748b !important;font-size:0.9rem;}
     .glossary-term {background:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;padding:12px;margin:6px 0;color:#1e293b !important;}
-    .glossary-term b{color:#1e40af !important;}
+    .glossary-term b {color:#1e40af !important;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -92,7 +81,7 @@ GLOSSAIRE = {
     "Somme": "Sommation mathématique des 5 numéros de la grille.",
     "Dizaines": "Répartition spatiale des numéros par blocs de dizaines (1-10, 11-20...).",
     "Terminaisons": "Analyse du dernier chiffre des numéros pour éviter les redondances.",
-    "Entropie de Shannon": "Mesure mathématique de la répartition des écarts internes de la grille pour éviter les motifs trop réguliers ou prévisibles.",
+    "Entropie de Shannon": "Mesure mathématique de la répartition des écarts internes de la grille pour éviter les motifs trop réguliers.",
     "Modèle de Popularité": "Estimation de l'attractivité humaine des numéros (dates de naissance, numéros fétiches) pour optimiser les rapports de gain.",
     "Système réducteur": "Algorithme combinatoire optimisant la sélection pour couvrir des garanties de gains.",
     "Backtest & Monte-Carlo": "Simulation historique et empirique évaluant le rendement d'une méthode de sélection sur un grand nombre d'itérations.",
@@ -136,7 +125,6 @@ PROFILS = {
 # FONCTIONS DE BASE DE THÉORIE DE L'INFORMATION & POPULARITÉ
 # ============================================================
 def calc_shannon_entropy(gr, max_val=50):
-    """Calcule l'entropie de Shannon basée sur les espaces d'écarts relatifs dans la grille."""
     g = sorted(list(gr))
     gaps = [g[0]]
     for i in range(1, len(g)):
@@ -152,16 +140,15 @@ def calc_shannon_entropy(gr, max_val=50):
     return float(entropy)
 
 def get_popularity_profile(gr):
-    """Estime un score de popularité moyen pour la grille (les grilles très jouées ont un score élevé)."""
     score_pop = 0.0
     for n in gr:
         p = 1.0
         if n <= 31:
-            p += 0.8  # Effet anniversaire (dates de naissance)
+            p += 0.8
         if n in [7, 13, 11, 21]:
-            p += 0.4  # Chiffres porte-bonheur et fétiches récurrents
+            p += 0.4
         if n > 40:
-            p -= 0.3  # Zone moins sélectionnée par le grand public
+            p -= 0.3
         score_pop += p
     return round(score_pop / len(gr), 2)
 
@@ -305,7 +292,6 @@ def load_csv(up, jid):
     return r, dbg
 
 def gen_simul(jid, nb=500):
-    """Générateur de simulation dynamique sans graine fixe"""
     jeu = JEUX[jid]
     t = []
     now = datetime.now()
@@ -325,12 +311,10 @@ def gen_simul(jid, nb=500):
     return pd.DataFrame(t).sort_values("date", ascending=False).reset_index(drop=True)
 
 # ============================================================
-# MOTEUR STATISTIQUE VECTORISÉ
+# MOTEUR STATISTIQUE VECTORISÉ DIRECT (SANS DOUBLE SÉRIALISATION)
 # ============================================================
 @st.cache_data
-def calc_stats_vectorized(df_json, jid, jf=None):
-    df = pd.read_json(io.StringIO(df_json))
-    df["date"] = pd.to_datetime(df["date"]).dt.date
+def calc_stats_vectorized(df, jid, jf=None):
     if jf and jf != "tous" and "jour" in df.columns:
         df = df[df["jour"].str.lower() == jf.lower()].reset_index(drop=True)
         
@@ -353,22 +337,22 @@ def calc_stats_vectorized(df_json, jid, jf=None):
     for num in range(1, max_boules + 1):
         idx_num = num - 1
         sorties_indices = np.where(occurrences[:, idx_num])[0]
-        freq_tot = len(sorties_indices)
-        f20 = np.sum(occurrences[:20, idx_num])
-        f12m = np.sum(occurrences[:100, idx_num])
-        f3m = np.sum(occurrences[:25, idx_num])
+        freq_tot = int(len(sorties_indices))
+        f20 = int(np.sum(occurrences[:20, idx_num]))
+        f12m = int(np.sum(occurrences[:100, idx_num]))
+        f3m = int(np.sum(occurrences[:25, idx_num]))
         
         if freq_tot > 1:
             intervalles = np.diff(sorties_indices)
-            em = np.mean(intervalles)
-            ex = np.max(intervalles)
-            es = np.std(intervalles) if len(intervalles) > 1 else 5.0
+            em = float(np.mean(intervalles))
+            ex = int(np.max(intervalles))
+            es = float(np.std(intervalles)) if len(intervalles) > 1 else 5.0
         else:
-            em = n_tirages / 5.0
-            ex = n_tirages
+            em = float(n_tirages / 5.0)
+            ex = int(n_tirages)
             es = 5.0
             
-        ec_actuel = ecarts_actuels[idx_num]
+        ec_actuel = int(ecarts_actuels[idx_num])
         zz = (ec_actuel - em) / max(es, 1.0)
         pb = min(99.0, max(1.0, 50.0 + zz * 15.0))
         td = "↗️" if f3m > (f12m - f3m) * 1.3 else ("↘️" if f3m < (f12m - f3m) * 0.7 else "→")
@@ -379,13 +363,13 @@ def calc_stats_vectorized(df_json, jid, jf=None):
             
         stats_boules[num] = {
             "numero": num,
-            "ecart": int(ec_actuel),
-            "ecart_moy": round(float(em), 1),
-            "ecart_max": int(ex),
-            "freq_tot": int(freq_tot),
-            "f20": int(f20),
-            "f12m": int(f12m),
-            "f3m": int(f3m),
+            "ecart": ec_actuel,
+            "ecart_moy": round(em, 1),
+            "ecart_max": ex,
+            "freq_tot": freq_tot,
+            "f20": f20,
+            "f12m": f12m,
+            "f3m": f3m,
             "chaleur": round(float(min(100.0, max(0.0, (f20 * 4) + (f12m * 0.5) + (30 - ec_actuel * 1.5)))), 1),
             "ratio_rec": round(float((ec_actuel / ex * 100) if ex > 0 else 0), 1),
             "proba": round(float(pb), 1),
@@ -413,6 +397,7 @@ def calc_stats_vectorized(df_json, jid, jf=None):
     
     terms = draws_matrix % 10
     terms_diff = np.array([len(np.unique(r)) for r in terms])
+    
     dizs = (draws_matrix - 1) // 10
     diz_diff = np.array([len(np.unique(r)) for r in dizs])
     
@@ -609,7 +594,6 @@ def gen_grille_constructive(jid, st_, mode="aleatoire", fp=False, fs=False, fd=F
 # RÉDUCTEUR D'ÉCART OPTIMISÉ (NP-HARD HEURISTIC)
 # ============================================================
 def reducteur_mathematique(numeros_selectionnes: list, t_garantie: int = 3) -> list:
-    """Algorithme de réduction glouton optimisé pour minimiser le coût d'acquisition de couverture."""
     v = sorted(list(set(numeros_selectionnes)))
     if len(v) < 5:
         return [v]
@@ -683,7 +667,6 @@ def backtest(df, jid, st_, mode, nt=50):
     }
 
 def simulate_monte_carlo(jid, st_, mode, n_simulations=2000):
-    """Moteur de simulation de Monte-Carlo (Loi uniforme de tirages virtuels)."""
     jeu = JEUX[jid]
     res = {str(i): 0 for i in range(6)}
     tm = n_simulations * jeu["prix"]
@@ -757,7 +740,7 @@ def auto_sug(st_, jid):
 # POINT D'ENTRÉE DE L'APPLICATION
 # ============================================================
 def main():
-    st.sidebar.markdown("<div style='text-align:center;'><h1 style='font-size:2rem;color:#1e293b;'>🎱 Smart-Loto</h1><p style='color:#64748b;'>V6.1 — Moteur de Recherche</p></div>", unsafe_allow_html=True)
+    st.sidebar.markdown("<div style='text-align:center;'><h1 style='font-size:2rem;color:#1e293b;'>🎱 Smart-Loto</h1><p style='color:#64748b;'>V6.2 — Édition Sécurisée</p></div>", unsafe_allow_html=True)
     st.sidebar.markdown("---")
     
     jid = st.sidebar.selectbox("🎮 Jeu", ["euromillions", "loto"], format_func=lambda x: f"{JEUX[x]['emoji']} {JEUX[x]['nom']}")
@@ -767,7 +750,6 @@ def main():
     up = st.sidebar.file_uploader("📤 CSV Officiel FDJ", type=["csv", "txt"])
     
     reel = False
-    dbg = {}
     if up:
         df, dbg = load_csv(up, jid)
         if df is not None and len(df) > 0:
@@ -802,7 +784,8 @@ def main():
     st.sidebar.caption("⚠️ Aucune garantie mathématique de gain")
     st.sidebar.caption("🛡️ Joueurs Info Service : 09 74 75 13 13")
     
-    stats = calc_stats_vectorized(df.to_json(), jid)
+    # Appel direct sans sérialisation intermédiaire
+    stats = calc_stats_vectorized(df, jid)
     bdg = "🟢 Données réelles" if reel else "🟡 Données simulées"
 
     # 1. PAGE DASHBOARD
@@ -1035,4 +1018,71 @@ def main():
             sim_type = st.radio("Moteur de simulation", ["Historique (Tirages passés)", "Monte-Carlo (Tirages virtuels uniformes)"])
         with c2:
             if sim_type == "Historique (Tirages passés)":
-                nt = s
+                nt = st.selectbox("Nombre de tirages tests", [20, 50, 100, 200], index=1)
+            else:
+                nt = st.selectbox("Nombre de tirages virtuels", [1000, 5000, 10000], index=1)
+        
+        if st.button("🚀 LANCER LA SIMULATION", type="primary", use_container_width=True):
+            if sim_type == "Historique (Tirages passés)":
+                rb = backtest(df, jid, stats, mode, nt)
+                st.subheader(f"Résultats de la simulation historique ({nt} tirages)")
+            else:
+                rb = simulate_monte_carlo(jid, stats, mode, nt)
+                st.subheader(f"Résultats de la simulation de Monte-Carlo ({nt} tirages uniformes)")
+                
+            st.metric("Total des mises théoriques", f"{rb['mise']} €")
+            st.metric("Total des gains retournés", f"{rb['gains']} €")
+            st.metric("Solde financier net", f"{rb['bilan']} €", delta=f"{rb['bilan']} €")
+            
+            st.markdown("### Distribution des correspondances de numéros :")
+            st.bar_chart(pd.Series(rb["res"]))
+
+    # 9. PAGE RÉDUCTEUR
+    elif page == "🧮 Réducteur":
+        st.markdown("<div class='main-header'>🧮 Réducteur Combinatoire</div>", unsafe_allow_html=True)
+        ni = st.text_input("Entrez votre sélection de 6 à 15 numéros (séparés par des virgules)", "5, 12, 19, 24, 33, 41, 45")
+        garantie = st.selectbox("Niveau de garantie théorique", [2, 3, 4])
+        
+        if ni:
+            nums = []
+            for n in ni.split(","):
+                n_clean = n.strip()
+                if n_clean.isdigit():
+                    val = int(n_clean)
+                    if 1 <= val <= jeu["boules_max"]:
+                        nums.append(val)
+            nums = sorted(list(set(nums)))
+            
+            if len(nums) >= 6:
+                st.success(f"Numéros sélectionnés : {nums}")
+                if st.button("🧮 OPTIMISER LES GRILLES", type="primary", use_container_width=True):
+                    grilles = reducteur_mathematique(nums, garantie)
+                    st.write(f"Nombre de grilles générées : **{len(grilles)}**")
+                    for i, g in enumerate(grilles):
+                        st.markdown(f"<div class='grille-container'><b>G{i+1} :</b> &nbsp;" + " ".join(f"<span class='boule'>{b}</span>" for b in g) + "</div>", unsafe_allow_html=True)
+            else:
+                st.warning("Veuillez sélectionner au moins 6 numéros différents.")
+
+    # 10. PAGE MES GRILLES
+    elif page == "🏆 Mes grilles":
+        st.markdown("<div class='main-header'>🏆 Mes Grilles Générées</div>", unsafe_allow_html=True)
+        if st.session_state.gg:
+            for g in st.session_state.gg:
+                st.write(f"🔹 Grille : `{g['g']}` — Étoiles : `{g['e']}` (Score : **{g['s']}/100** | {g['m']})")
+            if st.button("🗑️ Réinitialiser la session"):
+                st.session_state.gg = []
+                st.rerun()
+        else:
+            st.info("Aucune grille générée pour le moment lors de cette session.")
+
+    # 11. PAGE DEBUG
+    elif page == "🔍 Debug":
+        st.markdown("<div class='main-header'>🔍 Diagnostic Fichier</div>", unsafe_allow_html=True)
+        st.write("Aperçu brut de la matrice de traitement active :")
+        st.dataframe(df.head(10), use_container_width=True)
+
+    # Note réglementaire obligatoire
+    st.markdown("<div class='footer-disclaimer'>⚠️ Outil de traitement d'informations statistiques de jeu — Aucune garantie de gains — Le hasard conserve son indépendance lors de chaque tirage.<br>🛡️ <a href='https://www.joueurs-info-service.fr/'>Joueurs Info Service</a> : 09 74 75 13 13</div>", unsafe_allow_html=True)
+
+if __name__ == "__main__":
+    main()
