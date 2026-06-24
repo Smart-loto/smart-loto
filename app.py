@@ -1,5 +1,5 @@
 # ============================================================
-# SMART-LOTO — VERSION 6.3.1 — STABLE
+# SMART-LOTO — VERSION 6.4 — ÉDITION SCIENCE DES DONNÉES
 # ============================================================
 
 import streamlit as st
@@ -10,10 +10,11 @@ from collections import Counter
 from datetime import datetime, timedelta
 import plotly.graph_objects as go
 import io
+import math
 
 # Configuration globale de l'interface
 st.set_page_config(
-    page_title="Smart-Loto V6.3.1", 
+    page_title="Smart-Loto V6.4", 
     page_icon="🎱", 
     layout="wide", 
     initial_sidebar_state="expanded"
@@ -81,10 +82,11 @@ GLOSSAIRE = {
     "Somme": "Sommation mathématique des 5 numéros de la grille.",
     "Dizaines": "Répartition spatiale des numéros par blocs de dizaines (1-10, 11-20...).",
     "Terminaisons": "Analyse du dernier chiffre des numéros pour éviter les redondances.",
+    "Loi de Poisson": "Modélisation probabiliste permettant d'isoler les déviations statistiques anormales (Outliers) par rapport au hasard théorique.",
+    "Matrice de Transition (Markov)": "Analyse séquentielle évaluant s'il existe une corrélation entre les tirages consécutifs (tirage t vers t+1).",
+    "Diversification de Portefeuille": "Algorithme d'optimisation (inspiré de Markowitz) réduisant les doublons de numéros sur un lot de grilles générées.",
     "Entropie de Shannon": "Mesure mathématique de la répartition des écarts internes de la grille pour éviter les motifs trop réguliers.",
-    "Modèle Sabermétrique": "Pondération théorique de la valeur du ticket en fonction de la densité attendue des autres joueurs pour maximiser les gains non partagés.",
-    "Test de Wald-Wolfowitz": "Test non paramétrique d'indépendance statistique (Runs Test) visant à vérifier l'absence de biais sur la machine de tirage.",
-    "Prospect Theory": "Théorie de Kahneman et Tversky modélisant la perception subjective de l'utilité du ticket face au risque.",
+    "Modèle de Popularité": "Estimation de l'attractivité humaine des numéros (dates de naissance, numéros fétiches) pour optimiser les rapports de gain.",
     "Système réducteur": "Algorithme combinatoire optimisant la sélection pour couvrir des garanties de gains.",
     "Backtest & Monte-Carlo": "Simulation historique et empirique évaluant le rendement d'une méthode de sélection sur un grand nombre d'itérations.",
     "Espérance": "Calcul du rendement moyen théorique espéré pour chaque grille jouée."
@@ -124,7 +126,7 @@ PROFILS = {
 }
 
 # ============================================================
-# UTILITIES & MATHEMATICAL HELPER FUNCTIONS (DEFINED FIRST)
+# UTILITIES & MATHEMATICAL HELPER FUNCTIONS
 # ============================================================
 def calc_shannon_entropy(gr, max_val=50):
     g = sorted(list(gr))
@@ -213,7 +215,41 @@ def calc_prospect_utility(jackpot_m, prix_ticket, pr_gagner):
     return float(u_nette), float(pi_p)
 
 # ============================================================
-# DATA MANAGEMENT FUNCTIONS
+# OUTILS STATISTIQUES AVANCÉS (POISSON & MARKOV)
+# ============================================================
+def poisson_pmf(k, lamb):
+    if k < 0:
+        return 0.0
+    try:
+        log_pmf = k * np.log(lamb) - lamb - math.lgamma(k + 1)
+        return float(np.exp(log_pmf))
+    except Exception:
+        return 0.0
+
+def poisson_cdf(k, lamb):
+    return float(sum(poisson_pmf(i, lamb) for i in range(int(k) + 1)))
+
+@st.cache_data
+def calc_markov_matrix(df, jid):
+    """Calcule la matrice empirique de transition séquentielle d'ordre 1 (tirage t vers t+1)"""
+    jeu = JEUX[jid]
+    max_b = jeu["boules_max"]
+    matrix = np.zeros((max_b, max_b))
+    
+    df_sorted = df.sort_values("date", ascending=True).reset_index(drop=True)
+    cols = [f"boule_{i}" for i in range(1, 6)]
+    
+    for t in range(len(df_sorted) - 1):
+        draw_t = df_sorted.loc[t, cols].astype(int).tolist()
+        draw_tp1 = df_sorted.loc[t+1, cols].astype(int).tolist()
+        for b_t in draw_t:
+            for b_tp1 in draw_tp1:
+                if 1 <= b_t <= max_b and 1 <= b_tp1 <= max_b:
+                    matrix[b_t - 1, b_tp1 - 1] += 1
+    return matrix
+
+# ============================================================
+# DATA LOADING
 # ============================================================
 def load_csv(up, jid):
     jeu = JEUX[jid]
@@ -351,27 +387,8 @@ def load_csv(up, jid):
     dbg["map"] = {"d": dc, "b": bc[:5], "e": ec[:2]}
     return r, dbg
 
-def gen_simul(jid, nb=500):
-    jeu = JEUX[jid]
-    t = []
-    now = datetime.now()
-    js = ["mardi", "vendredi"] if jid == "euromillions" else ["lundi", "mercredi", "samedi"]
-    for i in range(nb):
-        b = sorted(random.sample(range(1, jeu["boules_max"] + 1), 5))
-        e = sorted(random.sample(range(1, jeu["etoiles_max"] + 1), 2)) if jeu["etoiles_max"] else []
-        d = {
-            "date": (now - timedelta(days=i * 3.5)).date(),
-            "boule_1": b[0], "boule_2": b[1], "boule_3": b[2], "boule_4": b[3], "boule_5": b[4],
-            "jour": js[i % len(js)], "mois": (now - timedelta(days=i * 3.5)).month
-        }
-        if e:
-            d["etoile_1"] = e[0]
-            d["etoile_2"] = e[1]
-        t.append(d)
-    return pd.DataFrame(t).sort_values("date", ascending=False).reset_index(drop=True)
-
 # ============================================================
-# MOTEUR STATISTIQUE VECTORISÉ DIRECT
+# STATISTICAL ENGINE
 # ============================================================
 @st.cache_data
 def calc_stats_vectorized(df, jid, jf=None):
@@ -394,6 +411,10 @@ def calc_stats_vectorized(df, jid, jf=None):
     ecarts_actuels[jamais_sorti] = n_tirages
     
     stats_boules = {}
+    
+    # Paramètre de la Loi de Poisson (Espérance théorique de sorties)
+    lamb_poisson = float(n_tirages * (5.0 / max_boules))
+    
     for num in range(1, max_boules + 1):
         idx_num = num - 1
         sorties_indices = np.where(occurrences[:, idx_num])[0]
@@ -421,6 +442,15 @@ def calc_stats_vectorized(df, jid, jf=None):
         if freq_tot > 0:
             dn = str(df.iloc[sorties_indices[0]]["date"])
             
+        # Évaluation de la déviation statistique par la Loi de Poisson
+        p_cdf = poisson_cdf(freq_tot, lamb_poisson)
+        if p_cdf > 0.975:
+            stat_status = "🔥 Sur-fréquence"
+        elif p_cdf < 0.025:
+            stat_status = "🧊 Sous-fréquence"
+        else:
+            stat_status = "⚖️ Normal"
+            
         stats_boules[num] = {
             "numero": num,
             "ecart": ec_actuel,
@@ -437,7 +467,8 @@ def calc_stats_vectorized(df, jid, jf=None):
             "term": num % 10,
             "diz": (num - 1) // 10,
             "retard": max(0, round(em - ec_actuel)),
-            "dern": dn
+            "dern": dn,
+            "status_poisson": stat_status
         }
         
     se = {}
@@ -489,72 +520,63 @@ def calc_stats_vectorized(df, jid, jf=None):
     }
 
 # ============================================================
-# SCORE DE QUALITÉ COHÉRENT V6.1 (ENTROPIE ET POPULARITÉ)
+# SCORE DE QUALITÉ COHÉRENT V6.1
 # ============================================================
 def score_v6_1(gr, et, st_, jid):
     jeu = JEUX[jid]
     sc = {}
     po = st_.get("profil", {})
     
-    # 1. Parité (10 pts)
     np2 = sum(1 for n in gr if n % 2 == 0)
     sc["⚖️ Parité"] = 10 if abs(np2 - po.get("pairs_moy", 2.5)) <= 0.5 else (7 if abs(np2 - po.get("pairs_moy", 2.5)) <= 1.5 else 3)
     
-    # 2. Dizaines (10 pts)
     dz = Counter((n - 1) // 10 for n in gr)
     sc["📊 Dizaines"] = 10 if len(dz) >= round(po.get("diz_moy", 4)) else (7 if len(dz) >= round(po.get("diz_moy", 4)) - 1 else 3)
     
-    # 3. Somme (10 pts)
     s = sum(gr)
     q1, q3 = po.get("somme_q1", 90), po.get("somme_q3", 160)
     sc["➕ Somme"] = 10 if q1 <= s <= q3 else (7 if jeu["somme_min"] <= s <= jeu["somme_max"] else 2)
     
-    # 4. Diversité (10 pts)
     ecs = [st_["boules"][n]["ecart"] for n in gr if n in st_["boules"]]
     sc["🔀 Diversité"] = (10 if float(np.std(ecs)) > 5 else (7 if float(np.std(ecs)) > 3 else 3)) if len(set(ecs)) > 1 else 3
     
-    # 5. Absence de Suite (8 pts)
     g = sorted(gr)
     hs = any(g[i+1] == g[i] + 1 and g[i+2] == g[i] + 2 for i in range(len(g) - 2))
     sc["🚫 Suite"] = 2 if hs else 8
     
-    # 6. Étoiles (8 pts)
     if et and len(et) == 2:
         e = abs(et[0] - et[1])
         sc["⭐ Étoiles"] = 8 if e >= 3 else (5 if e >= 2 else 2)
     else:
         sc["⭐ Étoiles"] = 8
         
-    # 7. Terminaisons (8 pts)
     terms = set(n % 10 for n in gr)
     sc["🔢 Terms"] = 8 if len(terms) >= round(po.get("terms_moy", 4)) else (5 if len(terms) >= round(po.get("terms_moy", 4)) - 1 else 2)
     
-    # 8. Bas / Hauts (8 pts)
     nb_bas = sum(1 for n in gr if n <= jeu["boules_max"] // 2)
     sc["⬆️⬇️ B/H"] = 8 if abs(nb_bas - po.get("bas_moy", 2.5)) <= 0.5 else (5 if abs(nb_bas - po.get("bas_moy", 2.5)) <= 1.5 else 2)
     
-    # 9. Chaleur (8 pts)
     chs = [st_["boules"][n]["chaleur"] for n in gr if n in st_["boules"]]
     mc = np.mean(chs) if chs else 50
     sc["🌡️ Chaleur"] = 8 if 35 <= mc <= 65 else (5 if 20 <= mc <= 80 else 2)
     
-    # 10. Probabilité théorique (8 pts)
     pbs = [st_["boules"][n]["proba"] for n in gr if n in st_["boules"]]
     mp = np.mean(pbs) if pbs else 50
     sc["📊 Proba"] = 8 if mp >= 55 else (5 if mp >= 45 else 2)
 
-    # 11. Entropie de Shannon (12 pts)
     ent = calc_shannon_entropy(gr, jeu["boules_max"])
     sc["🌀 Entropie"] = 12 if 2.1 <= ent <= 2.55 else (8 if 1.8 <= ent < 2.1 else 3)
     
     return {"total": sum(sc.values()), "detail": sc, "max": 100}
 
 # ============================================================
-# GÉNÉRATEUR CONSTRUCTIF AVEC FILTRES SCIENTIFIQUES
+# GÉNÉRATEUR CONSTRUCTIF AVEC FILTRES SCIENTIFIQUES & PORTFOLIO
 # ============================================================
 def gen_grille_constructive(jid, st_, mode="aleatoire", fp=False, fs=False, fd=False, fa=False,
                             chasseur=0, forces=None, ee=0, plafond="aucun",
-                            f_term=False, f_bh=False, pw_ch=50, pw_ec=50, pw_pr=50):
+                            f_term=False, f_bh=False, pw_ch=50, pw_ec=50, pw_pr=50,
+                            portfolio_counts=None):
+    """Génère une grille. Ajuste le poids des numéros selon le portefeuille pour éviter les redondances."""
     jeu = JEUX[jid]
     max_boules = jeu["boules_max"]
     fo = [f for f in (forces or []) if 1 <= f <= max_boules][:3]
@@ -578,6 +600,11 @@ def gen_grille_constructive(jid, st_, mode="aleatoire", fp=False, fs=False, fd=F
                 w = score_opt ** 1.5 + 1
         else:
             w = 1.0
+            
+        # Modèle de diversification du portefeuille : pénalise les numéros déjà choisis dans les grilles précédentes
+        if portfolio_counts and n in portfolio_counts:
+            w = w * (0.15 ** portfolio_counts[n])
+            
         poids.append(w)
         
     poids = np.array(poids)
@@ -772,7 +799,6 @@ def show_sc(sc, entropy_val, pop_score):
         st.markdown(f"<div class='score-big'><div class='score-number' style='color:{cc};'>{sc['total']}</div><div class='score-label'>/ {sc['max']} {ev}</div></div>", unsafe_allow_html=True)
         st.write(f"🌀 **Entropie** : `{entropy_val:.3f}` *(cible : 2.1 - 2.5)*")
         
-        # Résolution sécurisée de l'Efficacité Sabermétrique sans NameError
         eff_val = calc_sabermetric_efficiency_from_pop(pop_score)
         st.write(f"👥 **Efficacité Sabermétrique** : `{eff_val:.1f}%` *(évitement du partage du jackpot)*")
     with c2:
@@ -804,7 +830,7 @@ def auto_sug(st_, jid):
 # POINT D'ENTRÉE DE L'APPLICATION
 # ============================================================
 def main():
-    st.sidebar.markdown("<div style='text-align:center;'><h1 style='font-size:2rem;color:#1e293b;'>🎱 Smart-Loto</h1><p style='color:#64748b;'>V6.3.1 — Intelligence Distribuée</p></div>", unsafe_allow_html=True)
+    st.sidebar.markdown("<div style='text-align:center;'><h1 style='font-size:2rem;color:#1e293b;'>🎱 Smart-Loto</h1><p style='color:#64748b;'>V6.4 — Édition Spatiale</p></div>", unsafe_allow_html=True)
     st.sidebar.markdown("---")
     
     jid = st.sidebar.selectbox("🎮 Jeu", ["euromillions", "loto"], format_func=lambda x: f"{JEUX[x]['emoji']} {JEUX[x]['nom']}")
@@ -886,7 +912,7 @@ def main():
         p = PROFILS[profil_choisi]
         st.markdown(f"<div class='insight-card'>💡 <b>{profil_choisi}</b> : {p['desc']}</div>", unsafe_allow_html=True)
         
-        st.subheader("2️⃣ Options de volume")
+        st.subheader("2️⃣ Options de volume & Portefeuille")
         c1, c2 = st.columns(2)
         with c1:
             nbg = st.selectbox("Nombre de grilles souhaité", [1, 3, 5, 10], index=1)
@@ -904,16 +930,22 @@ def main():
                 
         with c2:
             ee = st.slider("⭐ Écart requis entre les étoiles", 0, 8, 2) if jeu["nb_etoiles"] else 0
+            diversify_port = st.checkbox("Activer l'optimisation de portefeuille (Éviter les numéros doublons)", True)
             
-        if st.button("🎱 GÉNÉRER LES COMBINAISONS", type="primary", use_container_width=True):
+        if st.button("🎱 GÉNÉRER LE PORTEFEUILLE", type="primary", use_container_width=True):
             ag = []
+            portfolio_counts = Counter() if diversify_port else None
+            
             for gi in range(nbg):
                 r = gen_grille_constructive(
                     jid, stats, p["mode"], fp=p["fp"], fs=p["fs"], fd=p["fd"], fa=p["fa"],
                     chasseur=0, forces=forces, ee=ee, plafond=p["plafond"],
-                    f_term=p["ft"], f_bh=p["fb"]
+                    f_term=p["ft"], f_bh=p["fb"], portfolio_counts=portfolio_counts
                 )
                 ag.append(r)
+                if diversify_port:
+                    portfolio_counts.update(r["grille"])
+                    
                 st.markdown(f"#### Grille {gi + 1}")
                 st.markdown(html_gr(r["grille"], r["etoiles"], stats, jid), unsafe_allow_html=True)
                 
@@ -923,7 +955,7 @@ def main():
                 eff_val = calc_sabermetric_efficiency_from_pop(pop_val)
                 cc = "#22c55e" if sc["total"] >= 70 else ("#f59e0b" if sc["total"] >= 50 else "#ef4444")
                 
-                st.markdown(f"<div style='border-left: 5px solid {cc}; padding-left: 10px; margin-bottom:15px;'>Score de conformité structurelle : <b>{sc['total']}/100</b> | Entropie : <b>{ent_val:.2f}</b> | Efficacité Sabermétrique : <b>{eff_val:.1f}%</b></div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='border-left: 5px solid {cc}; padding-left: 10px; margin-bottom:15px;'>Score de conformité : <b>{sc['total']}/100</b> | Entropie : <b>{ent_val:.2f}</b> | Efficacité Sabermétrique : <b>{eff_val:.1f}%</b></div>", unsafe_allow_html=True)
                 st.markdown("---")
                 
             st.session_state.gg.extend([{"g": r["grille"], "e": r["etoiles"], "s": r["score"]["total"], "m": profil_choisi, "t": datetime.now().strftime("%H:%M")} for r in ag])
@@ -963,16 +995,23 @@ def main():
             fdi = st.checkbox("Limiter à 3 numéros max par dizaine", True)
             fan = st.checkbox("Interdire les suites de 3 numéros", True)
             ftm = st.checkbox("Vérifier les terminaisons", False)
+            diversify_port = st.checkbox("Optimisation de Portefeuille Expert", True)
             
-        if st.button("🎯 CALCULER LA GRILLE", type="primary", use_container_width=True):
+        if st.button("🎯 CALCULER LE PORTEFEUILLE EXPERT", type="primary", use_container_width=True):
             ag = []
+            portfolio_counts = Counter() if diversify_port else None
+            
             for gi in range(nbg):
                 r = gen_grille_constructive(
                     jid, stats, mode, fp=fpa, fs=True, fd=fdi, fa=fan,
                     chasseur=0, forces=forces, ee=ee, plafond=plafond,
-                    f_term=ftm, f_bh=False, pw_ch=pw_ch, pw_ec=pw_ec, pw_pr=pw_pr
+                    f_term=ftm, f_bh=False, pw_ch=pw_ch, pw_ec=pw_ec, pw_pr=pw_pr,
+                    portfolio_counts=portfolio_counts
                 )
                 ag.append(r)
+                if diversify_port:
+                    portfolio_counts.update(r["grille"])
+                    
                 st.markdown(f"#### Grille G{gi+1}")
                 st.markdown(html_gr(r["grille"], r["etoiles"], stats, jid), unsafe_allow_html=True)
                 show_sc(r["score"], calc_shannon_entropy(r["grille"], jeu["boules_max"]), get_popularity_profile(r["grille"]))
@@ -981,45 +1020,61 @@ def main():
 
     # 4. PAGE STATISTIQUES
     elif page == "📊 Statistiques":
-        st.markdown("<div class='main-header'>📊 Analyse Graphique</div>", unsafe_allow_html=True)
+        st.markdown("<div class='main-header'>📊 Analyses Spatiales & Markoviennes</div>", unsafe_allow_html=True)
         
-        nc = 10
-        nr = (jeu["boules_max"] + nc - 1) // nc
-        zd, td = [], []
-        for row in range(nr):
-            zr, tr = [], []
-            for col in range(nc):
-                n = row * nc + col + 1
-                if n <= jeu["boules_max"]:
-                    s = stats["boules"][n]
-                    zr.append(s["chaleur"])
-                    tr.append(f"Numéro {n}<br>Indice chaleur : {s['chaleur']}/100<br>Écart actuel : {s['ecart']}")
-                else:
-                    zr.append(None)
-                    tr.append("")
-            zd.append(zr)
-            td.append(tr)
+        t1, t2, t3 = st.tabs(["🌡️ Cartographie de Chaleur", "📈 Modèle de Poisson (Outliers)", "🔄 Chaîne de Markov (Transition)"])
+        
+        with t1:
+            nc = 10
+            nr = (jeu["boules_max"] + nc - 1) // nc
+            zd, td = [], []
+            for row in range(nr):
+                zr, tr = [], []
+                for col in range(nc):
+                    n = row * nc + col + 1
+                    if n <= jeu["boules_max"]:
+                        s = stats["boules"][n]
+                        zr.append(s["chaleur"])
+                        tr.append(f"Numéro {n}<br>Chaleur : {s['chaleur']}/100<br>Écart actuel : {s['ecart']}")
+                    else:
+                        zr.append(None)
+                        tr.append("")
+                zd.append(zr)
+                td.append(tr)
+                
+            fh = go.Figure(data=go.Heatmap(
+                z=zd, text=td, hoverinfo="text",
+                colorscale=[[0, "#1e3a5f"], [0.5, "#f59e0b"], [1, "#ef4444"]],
+                showscale=False
+            ))
+            for row in range(nr):
+                for col in range(nc):
+                    n = row * nc + col + 1
+                    if n <= jeu["boules_max"]:
+                        fh.add_annotation(x=col, y=row, text=str(n), showarrow=False, font=dict(color="white", size=14))
+                        
+            fh.update_layout(height=350, margin=dict(l=10, r=10, t=10, b=10), xaxis=dict(showticklabels=False), yaxis=dict(showticklabels=False))
+            st.plotly_chart(fh, use_container_width=True)
             
-        fh = go.Figure(data=go.Heatmap(
-            z=zd, text=td, hoverinfo="text",
-            colorscale=[[0, "#1e3a5f"], [0.5, "#f59e0b"], [1, "#ef4444"]],
-            showscale=False
-        ))
-        
-        for row in range(nr):
-            for col in range(nc):
-                n = row * nc + col + 1
-                if n <= jeu["boules_max"]:
-                    fh.add_annotation(x=col, y=row, text=str(n), showarrow=False, font=dict(color="white", size=14))
-                    
-        fh.update_layout(height=350, margin=dict(l=10, r=10, t=10, b=10), xaxis=dict(showticklabels=False), yaxis=dict(showticklabels=False))
-        st.plotly_chart(fh, use_container_width=True)
-        
-        st.subheader("📋 Matrice globale des numéros")
-        dfc = pd.DataFrame(list(stats["boules"].values()))
-        st.dataframe(dfc[["numero", "ecart", "ecart_moy", "ecart_max", "chaleur", "proba", "tend", "retard"]].rename(
-            columns={"numero": "N°", "ecart": "Écart Actuel", "ecart_moy": "Moyenne", "ecart_max": "Max", "chaleur": "Chaleur /100", "proba": "Index Proba %", "tend": "Tendance", "retard": "Retard estimé"}
-        ), hide_index=True, use_container_width=True)
+        with t2:
+            st.subheader("📋 Matrice globale des numéros (Audit de Poisson)")
+            dfc = pd.DataFrame(list(stats["boules"].values()))
+            st.dataframe(dfc[["numero", "ecart", "ecart_moy", "freq_tot", "status_poisson", "chaleur", "proba"]].rename(
+                columns={"numero": "N°", "ecart": "Écart Actuel", "ecart_moy": "Moyenne", "freq_tot": "Sorties totales", "status_poisson": "Audit de Poisson", "chaleur": "Chaleur /100", "proba": "Index Proba %"}
+            ), hide_index=True, use_container_width=True)
+            
+        with t3:
+            st.subheader("🔄 Carte d'enchaînement transitionnel (Markov t → t+1)")
+            st.write("Ce graphique montre le taux d'apparition d'un numéro au tirage immédiatement postérieur à un autre. Un hasard idéal se traduit par une matrice uniforme.")
+            m_matrix = calc_markov_matrix(df, jid)
+            
+            fm = go.Figure(data=go.Heatmap(
+                z=m_matrix,
+                colorscale="Viridis",
+                showscale=True
+            ))
+            fm.update_layout(height=500, margin=dict(l=10, r=10, t=10, b=10), xaxis=dict(title="Numéro suivant (t+1)"), yaxis=dict(title="Numéro initial (t)"))
+            st.plotly_chart(fm, use_container_width=True)
 
     # 5. PAGE VÉRIFICATEUR
     elif page == "📱 Vérifier mes grilles":
