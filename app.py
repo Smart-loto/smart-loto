@@ -1,35 +1,34 @@
 # ============================================================
-# SMART-LOTO — VERSION 9.0.0 — NEURAL & GEOMETRIC EDITION
+# SMART-LOTO — VERSION 9.3 — PRO DASHBOARD (10 GRILLES)
 # ============================================================
-# Fusion Pro + IA Velocity Engine + Geometry Optimizer
-# ============================================================
-
 import streamlit as st
 import pandas as pd
 import numpy as np
 import random
-from collections import Counter
-from datetime import datetime
 import plotly.graph_objects as go
 import plotly.express as px
 import io
-import math
 
-# --- CONFIGURATION INTERFACE ---
-st.set_page_config(page_title="Smart-Loto V9 Neural Pro", page_icon="🧬", layout="wide", initial_sidebar_state="expanded")
+# --- CONFIGURATION ---
+st.set_page_config(page_title="Smart-Loto V9.3 Pro", page_icon="🧬", layout="wide")
 
-# --- STYLE CSS PREMIUM ---
+# --- CSS PRO ---
 st.markdown("""
 <style>
-    :root { --primary: #1e40af; --secondary: #7c3aed; --neural: #10b981; }
-    .main-header { font-size:2.2rem; font-weight:800; background:linear-gradient(135deg,#1e40af,#7c3aed); -webkit-background-clip:text; -webkit-text-fill-color:transparent; text-align:center; padding:10px 0; }
-    .stMetric { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px !important; }
-    .boule { background: radial-gradient(circle at 30% 30%, #3b82f6, #1e40af); color: #fff !important; border-radius: 50%; width: 50px; height: 50px; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; margin: 3px; box-shadow: 0 3px 6px rgba(0,0,0,0.2); }
-    .etoile { background: radial-gradient(circle at 30% 30%, #f59e0b, #fbbf24); color: #fff !important; border-radius: 50%; width: 50px; height: 50px; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; margin: 3px; box-shadow: 0 3px 6px rgba(0,0,0,0.2); }
-    .neural-card { border: 1px solid var(--neural); background: #f0fdf4; padding: 15px; border-radius: 12px; margin: 10px 0; }
-    .geo-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; background: #e2e8f0; padding: 5px; border-radius: 5px; width: fit-content; margin: auto; }
-    .geo-cell { width: 20px; height: 20px; background: white; border-radius: 2px; }
-    .geo-cell.active { background: var(--secondary); }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+    html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+    .main-header { font-size: 2.5rem; font-weight: 800; color: #1e293b; text-align: center; margin-bottom: 2rem; }
+    .result-card { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+    .draw-container { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; margin-bottom: 1.2rem; padding-bottom: 1rem; border-bottom: 1px solid #f1f5f9; }
+    .boule { background: radial-gradient(circle at 30% 30%, #3b82f6, #1e40af); color: white; border-radius: 50%; width: 46px; height: 46px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; box-shadow: 0 3px 5px rgba(30, 64, 175, 0.2); }
+    .etoile { background: radial-gradient(circle at 30% 30%, #fbbf24, #d97706); color: white; border-radius: 50%; width: 46px; height: 46px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; box-shadow: 0 3px 5px rgba(217, 119, 6, 0.2); }
+    .divider { width: 2px; height: 30px; background: #e2e8f0; margin: 0 8px; }
+    .geo-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; background: #f1f5f9; padding: 6px; border-radius: 6px; width: 140px; }
+    .geo-cell { width: 11px; height: 11px; background: white; border-radius: 1px; }
+    .geo-cell.active { background: #7c3aed; }
+    .metric-label { font-size: 0.75rem; font-weight: 600; color: #64748b; margin-bottom: 0.3rem; text-transform: uppercase; }
+    .metric-value { font-size: 0.95rem; font-weight: 700; color: #1e293b; }
+    @media (max-width: 600px) { .boule, .etoile { width: 38px; height: 38px; font-size: 0.85rem; } }
 </style>
 """, unsafe_allow_html=True)
 
@@ -39,46 +38,22 @@ JEUX = {
     "loto": {"nom": "Loto", "emoji": "🎱", "boules_max": 49, "nb_boules": 5, "etoiles_max": 10, "nb_etoiles": 1, "prix": 2.20, "proba": 1/19068840}
 }
 
-# ============================================================
-# NEURAL & GEOMETRIC ENGINE (MOTEURS IA)
-# ============================================================
-
-def neural_velocity_engine(df, max_b):
-    """Calcule la 'Vélocité Neuronale' : accélération de la fréquence sur 3 fenêtres de temps."""
+# --- ENGINE ---
+def neural_velocity_engine(df, max_val, is_stars=False):
     engine_stats = {}
-    b_cols = [c for c in df.columns if "boule" in c]
-    
-    # Fenêtres : 10, 30, 100 derniers tirages
-    f1, f2, f3 = 10, 30, 100
-    
-    for n in range(1, max_b + 1):
-        presence = df.apply(lambda r: 1 if n in r[b_cols].values else 0, axis=1).tolist()
-        v1 = sum(presence[:f1]) / f1
-        v2 = sum(presence[:f2]) / f2
-        v3 = sum(presence[:f3]) / f3
-        
-        # Accélération (Velocity) : si v1 > v2, le numéro 'accélère'
-        velocity = (v1 * 0.5) + (v2 * 0.3) + (v3 * 0.2)
-        acceleration = v1 / (v2 + 0.01)
-        
-        engine_stats[n] = {
-            "velocity": round(velocity * 100, 2),
-            "trend": "🔥" if acceleration > 1.2 else ("🧊" if acceleration < 0.8 else "⚖️"),
-            "weight": velocity * acceleration
-        }
+    cols = [c for c in df.columns if ("etoile" if is_stars else "boule") in c]
+    f1, f2 = (5, 15) if is_stars else (10, 30)
+    for n in range(1, max_val + 1):
+        presence = df.apply(lambda r: 1 if n in r[cols].values else 0, axis=1).tolist()
+        v1, v2 = sum(presence[:f1])/f1, sum(presence[:f2])/f2
+        acc = v1 / (v2 + 0.01)
+        engine_stats[n] = {"velocity": round(v1*100, 1), "weight": max(0.01, v1 * acc)}
     return engine_stats
 
 def analyze_geometry(grille):
-    """Analyse la répartition spatiale pour éviter les motifs (lignes, colonnes)."""
-    rows = [(n-1)//10 for n in grille]
-    cols = [(n-1)%10 for n in grille]
-    # Score de dispersion : variance élevée = grille bien dispersée
+    rows, cols = [(n-1)//10 for n in grille], [(n-1)%10 for n in grille]
     score = (np.std(rows) + np.std(cols)) * 2
     return round(min(10, score), 1)
-
-# ============================================================
-# GESTION DES DONNÉES
-# ============================================================
 
 @st.cache_data
 def load_data(jid, uploaded_file):
@@ -95,17 +70,7 @@ def load_data(jid, uploaded_file):
             df = df.dropna().reset_index(drop=True)
         except: df = generate_sim(jeu)
     else: df = generate_sim(jeu)
-    
-    # Engine Neural
-    neural_stats = neural_velocity_engine(df, jeu["boules_max"])
-    
-    # Stats de base
-    stats = {"boules": {}, "neural": neural_stats, "matrix": np.zeros((jeu["boules_max"], jeu["boules_max"])), "nb": len(df)}
-    for n in range(1, jeu["boules_max"] + 1):
-        pres = df.apply(lambda r: 1 if n in r.values else 0, axis=1).tolist()
-        stats["boules"][n] = {"ecart": next((i for i, x in enumerate(pres) if x == 1), len(df)), "chaleur": sum(pres[:20])*5}
-        
-    return df, stats
+    return df
 
 def generate_sim(jeu):
     data = []
@@ -117,110 +82,103 @@ def generate_sim(jeu):
         data.append(row)
     return pd.DataFrame(data)
 
-# ============================================================
-# UI COMPONENTS
-# ============================================================
+def draw_result_card(idx, grille, etoiles, jeu, stats_b):
+    with st.container():
+        st.markdown(f"""
+        <div class="result-card">
+            <div style="font-weight:800; color:#94a3b8; font-size:0.7rem; margin-bottom:0.8rem;">PROJECTION #{idx}</div>
+            <div class="draw-container">
+                {"".join([f'<div class="boule">{b}</div>' for b in grille])}
+                <div class="divider"></div>
+                {"".join([f'<div class="etoile">{e}</div>' for e in etoiles])}
+            </div>
+        """, unsafe_allow_html=True)
+        
+        c1, c2, c3 = st.columns([1, 1, 1.5])
+        with c1:
+            st.markdown('<div class="metric-label">Géométrie</div>', unsafe_allow_html=True)
+            geo_score = analyze_geometry(grille)
+            st.markdown(f'<div class="metric-value">{geo_score}/10</div>', unsafe_allow_html=True)
+            grid_html = "<div class='geo-grid'>"
+            for i in range(1, jeu["boules_max"] + 1):
+                active = "active" if i in grille else ""
+                grid_html += f"<div class='geo-cell {active}'></div>"
+            grid_html += "</div>"
+            st.markdown(grid_html, unsafe_allow_html=True)
+            
+        with c2:
+            st.markdown('<div class="metric-label">Sabermétrie</div>', unsafe_allow_html=True)
+            dates = sum(1 for n in grille if n <= 31)
+            color = "#ef4444" if dates >= 4 else ("#f59e0b" if dates >= 3 else "#10b981")
+            st.markdown(f'<div class="metric-value" style="color:{color}">{dates} dates</div>', unsafe_allow_html=True)
+            st.progress(dates/5)
+            
+        with c3:
+            st.markdown('<div class="metric-label">Neural Velocity</div>', unsafe_allow_html=True)
+            avg_v = np.mean([stats_b[n]["velocity"] for n in grille])
+            st.markdown(f'<div class="metric-value">{avg_v:.1f}%</div>', unsafe_allow_html=True)
+            st.caption("Score d'accélération neuronale")
 
-def draw_mini_grid(grille, max_b):
-    html = "<div class='geo-grid'>"
-    for i in range(1, max_b + 1):
-        active = "active" if i in grille else ""
-        html += f"<div class='geo-cell {active}'></div>"
-    html += "</div>"
-    st.markdown(html, unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
-# ============================================================
-# MAIN APP
-# ============================================================
-
+# --- MAIN ---
 def main():
-    st.sidebar.markdown("<h1 style='text-align:center;'>🧬 SMART-LOTO V9</h1>", unsafe_allow_html=True)
+    st.sidebar.markdown("### 🧬 SMART-LOTO V9.3")
     jid = st.sidebar.selectbox("JEU", list(JEUX.keys()), format_func=lambda x: JEUX[x]['nom'])
     jeu = JEUX[jid]
     
-    up = st.sidebar.file_uploader("📥 Archive FDJ (CSV)", type="csv")
-    df, stats = load_data(jid, up)
+    up = st.sidebar.file_uploader("📥 CSV FDJ", type="csv")
+    df = load_data(jid, up)
     
-    menu = st.sidebar.radio("SAAS MENU", ["Dashboard", "Neural Engine", "Générateur PRO", "Kelly & Bankroll"])
+    stats_b = neural_velocity_engine(df, jeu["boules_max"])
+    stats_e = neural_velocity_engine(df, jeu["etoiles_max"], is_stars=True)
+    
+    menu = st.sidebar.radio("MENU", ["Dashboard", "Générateur PRO", "Kelly & Bankroll"])
 
     if menu == "Dashboard":
-        st.markdown(f"<div class='main-header'>{jeu['nom']} Neural Analytics</div>", unsafe_allow_html=True)
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Analyse sur", f"{stats['nb']} tirages")
-        c2.metric("Stabilité Système", "98.4%")
-        c3.metric("Neural Velocity Index", f"{np.mean([s['velocity'] for s in stats['neural'].values()]):.2f}")
+        st.markdown(f"<div class='main-header'>Analyse {jeu['nom']}</div>", unsafe_allow_html=True)
+        st.subheader("🔥 Vélocité : Boules")
+        fig_b = px.bar(x=list(stats_b.keys()), y=[s["velocity"] for s in stats_b.values()], color=[s["velocity"] for s in stats_b.values()], color_continuous_scale="RdYlGn_r")
+        fig_b.update_layout(height=250, margin=dict(l=0,r=0,b=0,t=0), showlegend=False)
+        st.plotly_chart(fig_b, use_container_width=True)
         
-        st.subheader("🔥 Heatmap de Vélocité (Tendance Récente)")
-        v_data = pd.DataFrame([{"N°": n, "Velocity": s["velocity"]} for n, s in stats["neural"].items()])
-        fig = px.line(v_data, x="N°", y="Velocity", markers=True)
-        st.plotly_chart(fig, use_container_width=True)
-
-    elif menu == "Neural Engine":
-        st.markdown("<div class='main-header'>🧠 Neural Engine Projection</div>", unsafe_allow_html=True)
-        st.write("L'IA analyse l'accélération des sorties sur 3 fenêtres temporelles pour identifier les numéros en phase 'émergente'.")
-        
-        neural_df = pd.DataFrame([
-            {"N°": n, "Vélocité": s["velocity"], "Tendance": s["trend"], "Poids IA": round(s["weight"], 4)}
-            for n, s in stats["neural"].items()
-        ]).sort_values("Poids IA", ascending=False)
-        
-        st.table(neural_df.head(15))
+        st.subheader("⭐ Vélocité : Étoiles")
+        z_vals = [[s["velocity"] for s in stats_e.values()]]
+        fig_e = go.Figure(data=go.Heatmap(z=z_vals, x=[f"E{n}" for n in stats_e.keys()], colorscale="YlOrRd"))
+        fig_e.update_layout(height=130, margin=dict(l=0,r=0,b=0,t=0))
+        st.plotly_chart(fig_e, use_container_width=True)
 
     elif menu == "Générateur PRO":
-        st.markdown("<div class='main-header'>🎯 Générateur Haute Précision</div>", unsafe_allow_html=True)
+        st.markdown(f"<h2 style='text-align:center;'>🎯 Générateur PRO</h2>", unsafe_allow_html=True)
         
-        col1, col2 = st.columns([1, 2])
-        with col1:
-            st.subheader("Optimisation")
-            strategy = st.radio("Moteur Principal", ["Neural Engine (IA)", "Sabermetric (Gain Max)", "Équilibré"])
-            nb = st.slider("Nombre de grilles", 1, 5, 1)
+        c1, c2 = st.columns([1, 3])
+        with c1:
+            strategy = st.radio("Stratégie", ["Neural Engine", "Sabermetric", "Équilibré"])
+            nb_grids = st.slider("Grilles à générer", 1, 10, 3) # LIMITE À 10
+            generate = st.button("🚀 CALCULER", use_container_width=True, type="primary")
             
-        with col2:
-            if st.button("🚀 CALCULER LES COMBINAISONS", type="primary", use_container_width=True):
-                for i in range(nb):
-                    # Sélection pondérée
-                    nums = list(range(1, jeu["boules_max"] + 1))
-                    weights = []
-                    for n in nums:
-                        if strategy == "Neural Engine (IA)": w = stats["neural"][n]["weight"]
-                        elif strategy == "Sabermetric (Gain Max)": w = 1.5 if n > 31 else 0.5
-                        else: w = stats["boules"][n]["chaleur"] + 1
-                        weights.append(max(0.01, w))
-                    
-                    grille = sorted(np.random.choice(nums, 5, replace=False, p=np.array(weights)/sum(weights)))
-                    etoiles = sorted(random.sample(range(1, jeu["etoiles_max"]+1), jeu["nb_etoiles"]))
-                    
-                    geo_score = analyze_geometry(grille)
-                    
-                    # Affichage
-                    st.markdown(f"#### Grille {i+1}")
-                    st.markdown("<div style='text-align:center;'>", unsafe_allow_html=True)
-                    for b in grille: st.markdown(f"<div class='boule'>{b}</div>", unsafe_allow_html=True)
-                    st.markdown("<div style='display:inline-block; width:20px;'></div>", unsafe_allow_html=True)
-                    for e in etoiles: st.markdown(f"<div class='etoile'>{e}</div>", unsafe_allow_html=True)
-                    st.markdown("</div>", unsafe_allow_html=True)
-                    
-                    c_g1, c_g2 = st.columns(2)
-                    with c_g1:
-                        st.write(f"📐 **Score Géométrique :** {geo_score}/10")
-                        draw_mini_grid(grille, jeu["boules_max"])
-                    with c_g2:
-                        st.write("📊 **Analyse Sabermétrique**")
-                        pop = sum(1 for n in grille if n <= 31)
-                        st.progress(pop/5)
-                        st.caption(f"{pop} numéros 'dates' détectés")
-                    st.markdown("---")
+        with c2:
+            if generate:
+                nums = list(range(1, jeu["boules_max"] + 1))
+                if strategy == "Neural Engine": b_weights = [stats_b[n]["weight"] for n in nums]
+                elif strategy == "Sabermetric": b_weights = [1.5 if n > 31 else 0.5 for n in nums]
+                else: b_weights = [stats_b[n]["velocity"] + 1 for n in nums]
+                
+                e_nums = list(range(1, jeu["etoiles_max"] + 1))
+                e_weights = [stats_e[n]["weight"] for n in e_nums]
+                
+                for i in range(nb_grids):
+                    grille = sorted(np.random.choice(nums, 5, replace=False, p=np.array(b_weights)/sum(b_weights)))
+                    etoiles = sorted(np.random.choice(e_nums, jeu["nb_etoiles"], replace=False, p=np.array(e_weights)/sum(e_weights)))
+                    draw_result_card(i+1, grille, etoiles, jeu, stats_b)
 
     elif menu == "Kelly & Bankroll":
-        st.subheader("💰 Gestion de Fortune")
-        col_b1, col_b2 = st.columns(2)
-        br = col_b1.number_input("Bankroll (€)", 10, 10000, 100)
-        jk = col_b2.number_input("Jackpot (M€)", 2, 250, 17) * 1_000_000
-        
-        odds = jk / jeu["prix"]
-        f = (odds * jeu["proba"] - (1-jeu["proba"])) / odds
-        st.metric("Mise suggérée (Kelly)", f"{max(0, f * br):.2f} €")
-        st.info("Le critère de Kelly minimise le risque de ruine mathématique.")
+        st.markdown("<h2 style='text-align:center;'>💰 Kelly</h2>", unsafe_allow_html=True)
+        col1, col2 = st.columns(2)
+        bankroll = col1.number_input("Budget (€)", 10, 10000, 100)
+        jackpot = col2.number_input("Jackpot (M€)", 2, 250, 17) * 1_000_000
+        f = ((jackpot/jeu["prix"]) * jeu["proba"] - (1-jeu["proba"])) / (jackpot/jeu["prix"])
+        st.metric("Conseil de mise", f"{max(0, f * bankroll):.2f} €")
 
 if __name__ == "__main__":
     main()
