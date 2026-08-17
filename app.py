@@ -121,4 +121,56 @@ def main():
         st.plotly_chart(fig_line_e, use_container_width=True)
         
         # 2. Heatmap
-        fig_heat_e = go.Figure(data=go.
+        fig_heat_e = go.Figure(data=go.Heatmap(z=[e_vels], x=[f"E{n}" for n in e_nums], colorscale="YlOrRd", showscale=False))
+        fig_heat_e.update_layout(height=80, margin=dict(l=0,r=0,b=0,t=0), xaxis=dict(showticklabels=False), yaxis=dict(showticklabels=False))
+        st.plotly_chart(fig_heat_e, use_container_width=True)
+
+    elif menu == "Neural Engine (Stats)":
+        st.markdown(f"<h2 style='text-align:center;'>🧠 Neural Engine Stats</h2>", unsafe_allow_html=True)
+        t1, t2 = st.tabs(["Boules", "Étoiles"])
+        with t1:
+            st.dataframe(pd.DataFrame([{"N°": n, "Vélocité": f"{s['velocity']}%", "Tendance": s["trend"], "Poids IA": round(s["weight"], 4)} for n, s in stats_b.items()]).sort_values("Poids IA", ascending=False), use_container_width=True, hide_index=True)
+        with t2:
+            st.dataframe(pd.DataFrame([{"Étoile": n, "Vélocité": f"{s['velocity']}%", "Tendance": s["trend"], "Poids IA": round(s["weight"], 4)} for n, s in stats_e.items()]).sort_values("Poids IA", ascending=False), use_container_width=True, hide_index=True)
+
+    elif menu == "Générateur PRO":
+        st.markdown(f"<h2 style='text-align:center;'>🎯 Générateur PRO</h2>", unsafe_allow_html=True)
+        c1, c2 = st.columns([1, 3])
+        with c1:
+            strategy = st.radio("Stratégie", ["Neural Engine", "Sabermetric", "Équilibré"])
+            nb_grids = st.slider("Grilles", 1, 10, 3)
+            generate = st.button("🚀 CALCULER", use_container_width=True, type="primary")
+        with c2:
+            if generate:
+                nums = list(range(1, jeu["boules_max"] + 1))
+                if strategy == "Neural Engine": b_weights = [stats_b[n]["weight"] for n in nums]
+                elif strategy == "Sabermetric": b_weights = [1.5 if n > 31 else 0.5 for n in nums]
+                else: b_weights = [stats_b[n]["velocity"] + 1 for n in nums]
+                
+                e_nums = list(range(1, jeu["etoiles_max"] + 1))
+                e_weights = [stats_e[n]["weight"] for n in e_nums]
+                
+                for i in range(nb_grids):
+                    grille = sorted(np.random.choice(nums, 5, replace=False, p=np.array(b_weights)/sum(b_weights)))
+                    etoiles = sorted(np.random.choice(e_nums, jeu["nb_etoiles"], replace=False, p=np.array(e_weights)/sum(e_weights)))
+                    st.markdown(f"""
+                    <div class="result-card">
+                        <div style="font-weight:800; color:#94a3b8; font-size:0.7rem; margin-bottom:0.8rem;">PROJECTION #{i+1}</div>
+                        <div class="draw-container">
+                            {"".join([f'<div class="boule">{b}</div>' for b in grille])}
+                            <div class="divider"></div>
+                            {"".join([f'<div class="etoile">{e}</div>' for e in etoiles])}
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+    elif menu == "Kelly & Bankroll":
+        st.markdown("<h2 style='text-align:center;'>💰 Kelly</h2>", unsafe_allow_html=True)
+        c1, c2 = st.columns(2)
+        br = c1.number_input("Budget (€)", 10, 10000, 100)
+        jk = c2.number_input("Jackpot (M€)", 2, 250, 17) * 1_000_000
+        f = ((jk/jeu["prix"]) * jeu["proba"] - (1-jeu["proba"])) / (jk/jeu["prix"])
+        st.metric("Mise conseillée", f"{max(0, f * br):.2f} €")
+
+if __name__ == "__main__":
+    main()
