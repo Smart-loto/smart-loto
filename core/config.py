@@ -171,5 +171,20 @@ APP_CSS = r"""
         color:white !important;
         border:1px solid #334155 !important;
     }
+    [data-testid="stHeader"] {
+    background-color:#0f172a !important;
+}
+
+[data-testid="stToolbar"] {
+    background-color:transparent !important;
+}
+
+[data-testid="stDecoration"] {
+    background-color:#fbbf24 !important;
+}
+
+header[data-testid="stHeader"] {
+    color:#f8fafc !important;
+}
 </style>
 """
