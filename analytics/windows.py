@@ -1,199 +1,152 @@
-# ============================================================
-# SMART-LOTO V38
-# MULTI WINDOW ANALYSIS
-# ============================================================
-
-
+import numpy as np
 import pandas as pd
 
 
-
-# ============================================================
-# Extraction fréquence fenêtre
-# ============================================================
-
-
-def frequency_window(
-        df,
-        numbers,
-        window,
-        prefix="b"
+def window_frequency_frame(
+    df,
+    max_val,
+    picks_per_draw,
+    prefix="b",
+    windows=(10, 30, 60, 100),
 ):
+    """
+    Compare les fréquences observées
+    sur plusieurs fenêtres récentes.
 
-
-    if window is None:
-
-        sample = df
-
-    else:
-
-        sample = df.head(window)
-
-
-
-    counts = {
-        n:0
-        for n in numbers
-    }
-
-
+    Convention :
+    index 0 = tirage le plus récent.
+    """
 
     cols = [
-        c for c in sample.columns
+        c
+        for c in df.columns
         if c.startswith(prefix)
     ]
 
+    if (
+        not cols
+        or len(df) == 0
+    ):
+        return pd.DataFrame()
 
+    matrix = df[
+        cols
+    ].to_numpy(
+        dtype=int
+    )
 
-    for col in cols:
+    theoretical_pct = (
+        100
+        * picks_per_draw
+        / max_val
+    )
 
-        values = sample[col].values
+    rows = []
 
-
-        for value in values:
-
-            value = int(value)
-
-            if value in counts:
-
-                counts[value]+=1
-
-
-
-    return counts
-
-
-
-# ============================================================
-# Toutes les fenêtres
-# ============================================================
-
-
-def calculate_multi_windows(
-        df,
-        numbers,
-        windows,
-        prefix="b"
-):
-
-
-    result = {
-
-        n:{}
-
-        for n in numbers
-
-    }
-
-
-
-    for name, size in windows.items():
-
-
-        frequencies = frequency_window(
-
-            df,
-
-            numbers,
-
-            size,
-
-            prefix
-
-        )
-
-
-
-        max_freq = max(
-            frequencies.values()
-        ) if frequencies else 1
-
-
-
-        for n in numbers:
-
-
-            result[n][name] = {
-
-                "frequency":
-                    frequencies[n],
-
-                "normalized":
-
-                    frequencies[n]
-                    /
-                    max_freq
-
-                    if max_freq
-
-                    else 0
-
-            }
-
-
-
-    return result
-
-
-
-# ============================================================
-# Fusion multi horizons
-# ============================================================
-
-
-def combine_windows(
-        window_data,
-        weights=None
-):
-
-
-    if weights is None:
-
-        weights = {
-
-            "court_terme":0.40,
-
-            "moyen_terme":0.30,
-
-            "long_terme":0.20,
-
-            "historique":0.10
-
+    for n in range(
+        1,
+        max_val + 1,
+    ):
+        row = {
+            "N°": n,
+            "Théorie %": theoretical_pct,
         }
 
-
-
-    scores = {}
-
-
-
-    for number, data in window_data.items():
-
-
-        score = 0
-
-
-
-        for name, values in data.items():
-
-
-            score += (
-
-                values["normalized"]
-
-                *
-
-                weights.get(
-                    name,
-                    0
-                )
-
+        for window in windows:
+            w = max(
+                1,
+                min(
+                    int(window),
+                    len(df),
+                ),
             )
 
+            pres = np.any(
+                matrix[:w] == n,
+                axis=1,
+            )
+
+            rate = float(
+                pres.mean()
+                * 100
+            )
+
+            row[
+                f"W{window} %"
+            ] = rate
+
+            row[
+                f"W{window} / théorie"
+            ] = (
+                rate
+                / theoretical_pct
+                if theoretical_pct > 0
+                else 1.0
+            )
+
+        rows.append(row)
+
+    return pd.DataFrame(
+        rows
+    )
 
 
-        scores[number] = score
+def window_signal(
+    df,
+    max_val,
+    picks_per_draw,
+    prefix="b",
+    short_window=15,
+    long_window=60,
+):
+    """
+    Signal descriptif
+    court / long.
+    """
 
+    frame = window_frequency_frame(
+        df=df,
+        max_val=max_val,
+        picks_per_draw=picks_per_draw,
+        prefix=prefix,
+        windows=(
+            short_window,
+            long_window,
+        ),
+    )
 
+    if frame.empty:
+        return frame
 
-    return scores
+    short_col = (
+        f"W{short_window} %"
+    )
+
+    long_col = (
+        f"W{long_window} %"
+    )
+
+    denom = frame[
+        long_col
+    ].replace(
+        0,
+        np.nan,
+    )
+
+    frame[
+        "Ratio court/long"
+    ] = (
+        frame[short_col]
+        / denom
+    ).fillna(
+        1.0
+    )
+
+    frame[
+        "Delta points"
+    ] = (
+        frame[short_col]
+        - frame[long_col]
+    )
+
+    return frame
