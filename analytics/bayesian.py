@@ -1,244 +1,195 @@
-# ============================================================
-# SMART-LOTO V38
-# BAYESIAN ENGINE
-# ============================================================
-
-"""
-Moteur bayésien simplifié.
-
-Objectif :
-- lisser les fréquences
-- éviter les réactions excessives aux petits échantillons
-- produire une mesure d'évidence explicable
-
-Ce module ne prédit pas les tirages.
-Il mesure uniquement l'adéquation des observations
-avec différentes hypothèses statistiques.
-"""
+import numpy as np
+import pandas as pd
 
 
-from math import comb
-
-from core.models import NumberEvidence
-
-from core.config import BAYES_CONFIG
-
-
-
-# ============================================================
-# Fréquence théorique
-# ============================================================
-
-def expected_frequency(
-        draws_count,
-        picks_per_draw,
-        total_numbers
+def beta_binomial_summary(
+    df,
+    max_val,
+    picks_per_draw,
+    prefix="b",
+    prior_strength=20.0,
 ):
+    """
+    Résumé bayésien Beta-Binomial
+    de la fréquence marginale
+    de chaque numéro.
 
-    probability = picks_per_draw / total_numbers
+    Le prior est centré sur la
+    probabilité théorique :
 
-    return draws_count * probability
+        picks_per_draw / max_val
 
+    L'intervalle 95 % est une
+    approximation normale du
+    posterior Beta afin de rester
+    sans dépendance SciPy.
+    """
 
+    cols = [
+        c
+        for c in df.columns
+        if c.startswith(prefix)
+    ]
 
-# ============================================================
-# Score bayésien Beta-Binomial
-# ============================================================
+    if (
+        not cols
+        or len(df) == 0
+    ):
+        return pd.DataFrame()
 
-
-def bayesian_probability(
-        observed,
-        total_draws,
-        picks_per_draw,
-        total_numbers
-):
-
-
-    alpha = BAYES_CONFIG["alpha_prior"]
-
-    beta = BAYES_CONFIG["beta_prior"]
-
-
-
-    expected_probability = (
-        picks_per_draw / total_numbers
+    matrix = df[
+        cols
+    ].to_numpy(
+        dtype=int
     )
 
+    total = len(df)
 
-
-    prior_success = (
-        alpha
-        +
-        expected_probability * 10
+    p0 = (
+        picks_per_draw
+        / max_val
     )
 
-
-    prior_failure = (
-        beta
-        +
-        (1 - expected_probability) * 10
+    prior_strength = max(
+        float(prior_strength),
+        1e-6,
     )
 
-
-
-    posterior = (
-
-        prior_success + observed
-
-    ) / (
-
-        prior_success
-        +
-        prior_failure
-        +
-        total_draws
-
+    alpha0 = (
+        p0
+        * prior_strength
     )
 
-
-
-    return float(posterior)
-
-
-
-# ============================================================
-# Niveau de confiance
-# ============================================================
-
-
-def confidence_level(score):
-
-
-    if score >= BAYES_CONFIG["confidence_high"]:
-
-        return "high"
-
-
-
-    if score >= BAYES_CONFIG["confidence_medium"]:
-
-        return "medium"
-
-
-
-    return "low"
-
-
-
-# ============================================================
-# Analyse d'un numéro
-# ============================================================
-
-
-def analyse_number(
-        number,
-        observed,
-        total_draws,
-        picks_per_draw,
-        total_numbers,
-        windows=None
-):
-
-
-    expected = expected_frequency(
-        total_draws,
-        picks_per_draw,
-        total_numbers
+    beta0 = (
+        (1.0 - p0)
+        * prior_strength
     )
 
+    rows = []
 
-
-    posterior = bayesian_probability(
-        observed,
-        total_draws,
-        picks_per_draw,
-        total_numbers
-    )
-
-
-
-    evidence = NumberEvidence(
-
-        number=number,
-
-        observed_frequency=observed,
-
-        expected_frequency=expected,
-
-        bayesian_score=posterior * 100,
-
-        posterior_probability=posterior,
-
-        windows=windows or {},
-
-        confidence=confidence_level(
-            posterior
+    for n in range(
+        1,
+        max_val + 1,
+    ):
+        present = np.any(
+            matrix == n,
+            axis=1,
         )
 
+        successes = int(
+            present.sum()
+        )
+
+        failures = (
+            total
+            - successes
+        )
+
+        alpha = (
+            alpha0
+            + successes
+        )
+
+        beta = (
+            beta0
+            + failures
+        )
+
+        mean = (
+            alpha
+            / (
+                alpha
+                + beta
+            )
+        )
+
+        var = (
+            alpha
+            * beta
+        ) / (
+            (
+                alpha
+                + beta
+            ) ** 2
+            * (
+                alpha
+                + beta
+                + 1
+            )
+        )
+
+        sd = float(
+            np.sqrt(var)
+        )
+
+        low = max(
+            0.0,
+            mean
+            - 1.96 * sd,
+        )
+
+        high = min(
+            1.0,
+            mean
+            + 1.96 * sd,
+        )
+
+        rows.append(
+            {
+                "N°": n,
+                "Observations": successes,
+                "Posterior %": (
+                    mean * 100
+                ),
+                "IC95 bas %": (
+                    low * 100
+                ),
+                "IC95 haut %": (
+                    high * 100
+                ),
+                "Théorie %": (
+                    p0 * 100
+                ),
+                "Ratio posterior/théorie": (
+                    mean / p0
+                    if p0 > 0
+                    else 1.0
+                ),
+            }
+        )
+
+    return pd.DataFrame(
+        rows
     )
 
 
+def bayesian_rank(
+    summary: pd.DataFrame,
+) -> pd.DataFrame:
 
-    evidence.explainability = {
+    if summary.empty:
+        return summary.copy()
 
-        "observed": observed,
+    out = summary.copy()
 
-        "expected": round(expected,2),
+    out[
+        "Rang posterior"
+    ] = out[
+        "Posterior %"
+    ].rank(
+        ascending=False,
+        method="average",
+    )
 
-        "difference":
-            round(
-                observed - expected,
-                2
-            ),
-
-        "confidence":
-            evidence.confidence
-    }
-
-
-
-    return evidence
-
-
-
-# ============================================================
-# Analyse complète d'une archive
-# ============================================================
-
-
-def analyse_archive(
-        frequency_table,
-        draws_count,
-        picks_per_draw,
-        total_numbers,
-        windows=None
-):
-
-
-    results = {}
-
-
-
-    for number, freq in frequency_table.items():
-
-
-        results[number] = analyse_number(
-
-            number,
-
-            freq,
-
-            draws_count,
-
-            picks_per_draw,
-
-            total_numbers,
-
-            windows.get(number,{})
-            if windows else {}
-
-        )
-
-
-
-    return results
+    return out.sort_values(
+        [
+            "Posterior %",
+            "N°",
+        ],
+        ascending=[
+            False,
+            True,
+        ],
+    ).reset_index(
+        drop=True
+    )
