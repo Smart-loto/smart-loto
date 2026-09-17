@@ -1,1 +1,1 @@
-"""Module Core"""
+# SMART LOTO V39
